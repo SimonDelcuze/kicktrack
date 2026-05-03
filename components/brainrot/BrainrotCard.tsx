@@ -1,41 +1,50 @@
-import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import { formatNumber } from '@/shared/utils/format';
-import type { Brainrot, Mutation, Rarity, UserBrainrot } from '@/shared/types';
+import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 import { currentMoneyPerSec } from '@/shared/utils/calculations';
+import { MutationChip } from '@/components/brainrot/MutationChip';
 
 type Props = {
   user: UserBrainrot;
   brainrot: Brainrot;
-  rarity?: Rarity;
   mutation: Mutation | null;
+  onClick?: () => void;
 };
 
-export function BrainrotCard({ user, brainrot, rarity, mutation }: Props) {
+export function BrainrotCard({ user, brainrot, mutation, onClick }: Props) {
   const income = currentMoneyPerSec(brainrot, user.level, mutation);
+
   return (
-    <Link
-      href={`/brainrot/${user.id}`}
-      className="rounded-xl border border-border p-4 transition hover:bg-accent"
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative flex min-h-[170px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card/30 p-5 text-left transition-all duration-200 hover:border-foreground/30 hover:bg-card/60"
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="font-semibold">{user.nickname || brainrot.name}</div>
-          {user.nickname && (
-            <div className="text-xs text-muted-foreground">{brainrot.name}</div>
-          )}
+      <div>
+        <div className="font-serif text-lg leading-snug text-foreground">
+          {user.nickname || brainrot.name}
         </div>
-        {rarity && (
-          <Badge style={{ backgroundColor: rarity.color_hex }}>{rarity.name}</Badge>
+        {user.nickname && (
+          <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            {brainrot.name}
+          </div>
         )}
       </div>
-      <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
-        <span>Lvl {user.level}</span>
-        {mutation && (
-          <span style={{ color: mutation.color_hex }}>{mutation.name} ×{mutation.multiplier}</span>
-        )}
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          lvl <span className="text-foreground/90">{user.level}</span>
+        </div>
+        {mutation && <MutationChip mutation={mutation} variant="chip" />}
       </div>
-      <div className="mt-2 font-mono text-lg">{formatNumber(income)}/s</div>
-    </Link>
+
+      <div className="mt-5 flex items-baseline justify-between border-t border-border/60 pt-4">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          income
+        </span>
+        <span className="font-mono text-base tabular-nums text-foreground transition-colors group-hover:text-primary">
+          {formatNumber(income)}/s
+        </span>
+      </div>
+    </button>
   );
 }
