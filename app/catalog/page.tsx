@@ -3,7 +3,6 @@ import { rarities } from '@/shared/data/rarities';
 import { bestMutation } from '@/shared/data/mutations';
 import { maxPotential } from '@/shared/utils/calculations';
 import { formatNumber } from '@/shared/utils/format';
-import { Badge } from '@/components/ui/badge';
 
 export default function CatalogPage() {
   const sortedRarities = [...rarities].sort((a, b) => a.tier_order - b.tier_order);
