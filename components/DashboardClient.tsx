@@ -43,23 +43,15 @@ export function DashboardClient({ base, brainrots, mutations }: Props) {
 
   return (
     <section>
-      <header className="mb-6 flex items-end justify-between gap-4">
-        <div className="flex items-baseline gap-3">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            Your base
-          </h2>
-          <span className="font-mono text-[11px] tabular-nums uppercase tracking-[0.22em] text-foreground">
-            {base.length.toString().padStart(2, '0')}
-            <span className="text-muted-foreground"> / {MAX_BASE_SIZE}</span>
-          </span>
-        </div>
+      <header className="mb-5 flex items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold tracking-tight">Your base</h2>
         <AddBrainrotDialog brainrots={brainrots} mutations={mutations} />
       </header>
 
       {base.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {enriched.map((entry, idx) => (
             <BrainrotCard
               key={entry.user.id}
@@ -74,7 +66,7 @@ export function DashboardClient({ base, brainrots, mutations }: Props) {
       )}
 
       {isFull && (
-        <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="mt-5 text-xs text-muted-foreground">
           Base full · adding a stronger brainrot evicts the weakest.
         </p>
       )}
@@ -94,16 +86,11 @@ export function DashboardClient({ base, brainrots, mutations }: Props) {
 
 function EmptyState() {
   return (
-    <div className="rounded-3xl border border-dashed border-border/80 bg-card/20 p-16 text-center">
-      <div className="mx-auto max-w-sm space-y-3">
-        <div className="font-serif text-2xl italic text-muted-foreground">
-          No brainrots yet.
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Hit the <span className="font-mono uppercase tracking-[0.18em]">add</span> button to
-          drop your first one in.
-        </p>
-      </div>
+    <div className="rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center">
+      <div className="text-sm font-medium text-foreground">No brainrots yet.</div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Hit Add to drop your first one in.
+      </p>
     </div>
   );
 }

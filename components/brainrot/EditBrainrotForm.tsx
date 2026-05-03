@@ -56,126 +56,115 @@ export function EditBrainrotForm({ user, brainrots, mutations, onComplete }: Pro
   const sorted = [...brainrots].sort((a, b) => a.base_money_per_sec - b.base_money_per_sec);
 
   return (
-    <div className="space-y-8">
-      <form action={handleUpdate} className="space-y-8">
-        <input type="hidden" name="brainrot_id" value={brainrotId} />
-        <input type="hidden" name="mutation_id" value={mutationId ?? 'null'} />
-        <input type="hidden" name="level" value={level} />
+    <form action={handleUpdate} className="space-y-6">
+      <input type="hidden" name="brainrot_id" value={brainrotId} />
+      <input type="hidden" name="mutation_id" value={mutationId ?? 'null'} />
+      <input type="hidden" name="level" value={level} />
 
-        {/* Brainrot grid */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {sorted.map((b) => {
-            const isSelected = brainrotId === b.id;
-            return (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => setBrainrotId(b.id)}
-                className={cn(
-                  'flex flex-col items-start gap-2 rounded-2xl border bg-card/40 p-4 text-left transition-all duration-150',
-                  'hover:bg-card/70 hover:border-foreground/30',
-                  isSelected
-                    ? 'border-primary bg-primary/[0.08] ring-2 ring-primary/40'
-                    : 'border-border/60',
-                )}
-              >
-                <span className="text-[13px] font-medium leading-tight text-foreground">
-                  {b.name}
-                </span>
-                <span
-                  className={cn(
-                    'font-mono text-base tabular-nums leading-none',
-                    isSelected ? 'text-primary' : 'text-muted-foreground',
-                  )}
-                >
-                  {formatNumber(b.base_money_per_sec)}
-                  <span className="ml-0.5 text-xs">/s</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Mutation chips */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMutationId(null)}
-            className={cn(
-              'rounded-full border px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] transition-all',
-              mutationId === null
-                ? 'border-foreground bg-foreground text-background'
-                : 'border-border/70 bg-card/40 text-muted-foreground hover:text-foreground',
-            )}
-          >
-            none
-          </button>
-          {mutations.map((m) => (
+      {/* Brainrot grid */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {sorted.map((b) => {
+          const isSelected = brainrotId === b.id;
+          return (
             <button
-              key={m.id}
+              key={b.id}
               type="button"
-              onClick={() => setMutationId(m.id)}
-              className="rounded-full"
-              aria-pressed={mutationId === m.id}
+              onClick={() => setBrainrotId(b.id)}
+              className={cn(
+                'flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-colors',
+                isSelected
+                  ? 'border-foreground bg-foreground/5'
+                  : 'border-border bg-card hover:border-foreground/40',
+              )}
             >
-              <MutationChip mutation={m} selected={mutationId === m.id} variant="chip" />
-            </button>
-          ))}
-        </div>
-
-        {/* Level slider + income preview */}
-        <div className="space-y-4 rounded-2xl border border-border/60 bg-card/40 p-5">
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              Level
-            </span>
-            <span className="font-mono text-2xl tabular-nums">
-              {level}
-              <span className="ml-1 text-xs text-muted-foreground">/ {MAX_LEVEL}</span>
-            </span>
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={MAX_LEVEL}
-            value={level}
-            onChange={(e) => setLevel(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
-          />
-          {previewIncome !== null && (
-            <div className="flex items-baseline justify-between border-t border-border/40 pt-4">
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                Income
+              <span className="text-[13px] font-semibold leading-tight text-foreground">
+                {b.name}
               </span>
-              <span className="font-mono text-2xl tabular-nums text-primary">
-                {formatNumber(previewIncome)}
+              <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                {formatNumber(b.base_money_per_sec)}
                 <span className="ml-0.5 text-xs">/s</span>
               </span>
-            </div>
-          )}
-        </div>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Save / delete actions */}
-        <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-6">
-          <Button
+      {/* Mutation chips */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setMutationId(null)}
+          className={cn(
+            'rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors',
+            mutationId === null
+              ? 'border-foreground bg-foreground text-background'
+              : 'border-border bg-card text-muted-foreground hover:text-foreground',
+          )}
+        >
+          none
+        </button>
+        {mutations.map((m) => (
+          <button
+            key={m.id}
             type="button"
-            variant="ghost"
-            disabled={pending}
-            onClick={handleDelete}
-            className="font-mono uppercase tracking-[0.18em] text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setMutationId(m.id)}
+            className="rounded-full"
+            aria-pressed={mutationId === m.id}
           >
-            Delete
-          </Button>
-          <Button
-            type="submit"
-            size="lg"
-            disabled={pending}
-            className="font-mono uppercase tracking-[0.18em]"
-          >
-            {pending ? 'Saving…' : 'Save'}
-          </Button>
+            <MutationChip mutation={m} selected={mutationId === m.id} variant="chip" />
+          </button>
+        ))}
+      </div>
+
+      {/* Level slider + income preview */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Level
+          </span>
+          <span className="font-mono text-2xl font-semibold tabular-nums">
+            {level}
+            <span className="ml-1 text-sm font-normal text-muted-foreground">
+              / {MAX_LEVEL}
+            </span>
+          </span>
         </div>
-      </form>
-    </div>
+        <input
+          type="range"
+          min={1}
+          max={MAX_LEVEL}
+          value={level}
+          onChange={(e) => setLevel(Number(e.target.value))}
+          className="mt-3 h-2 w-full cursor-pointer appearance-none rounded-full bg-border accent-foreground"
+        />
+        {previewIncome !== null && (
+          <div className="mt-4 flex items-baseline justify-between border-t border-border pt-3">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Income
+            </span>
+            <span className="font-mono text-2xl font-semibold tabular-nums">
+              {formatNumber(previewIncome)}
+              <span className="ml-0.5 text-xs font-normal text-muted-foreground">/s</span>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between gap-3 border-t border-border pt-5">
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={pending}
+          onClick={handleDelete}
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          Delete
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+    </form>
   );
 }

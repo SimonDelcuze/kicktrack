@@ -20,18 +20,18 @@ export function SettingsDialog() {
           <button
             type="button"
             aria-label="Settings"
-            className="inline-flex size-9 items-center justify-center rounded-full border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex size-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
           >
             <SettingsIcon />
           </button>
         }
       />
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-8 sm:max-w-3xl md:p-10">
-        <DialogTitle className="font-serif text-3xl italic md:text-4xl">Settings</DialogTitle>
-        <DialogDescription className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto p-6 sm:max-w-3xl md:p-8">
+        <DialogTitle className="text-base font-semibold">Settings</DialogTitle>
+        <DialogDescription className="text-xs text-muted-foreground">
           Backup or restore your base.
         </DialogDescription>
-        <div className="mt-6">
+        <div className="mt-5">
           <ImportForm />
         </div>
       </DialogContent>
@@ -46,7 +46,7 @@ function SettingsIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="size-4"

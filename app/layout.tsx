@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Fraunces, JetBrains_Mono } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { Nav } from '@/components/Nav';
@@ -10,16 +10,9 @@ const geistSans = Geist({
   display: 'swap',
 });
 
-const fraunces = Fraunces({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-fraunces',
-  axes: ['opsz', 'SOFT'],
-  display: 'swap',
-});
-
-const jetbrains = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains',
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -30,13 +23,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="fr"
-      className={`dark ${geistSans.variable} ${fraunces.variable} ${jetbrains.variable}`}
-    >
-      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/30 selection:text-foreground">
+    <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <Nav />
-        <main className="mx-auto max-w-6xl px-6 pb-24 pt-10 md:pt-16">{children}</main>
+        <main className="mx-auto max-w-6xl px-6 pb-24 pt-10">{children}</main>
         <Toaster />
       </body>
     </html>

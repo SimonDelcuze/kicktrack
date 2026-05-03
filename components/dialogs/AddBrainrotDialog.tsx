@@ -23,18 +23,8 @@ export function AddBrainrotDialog({ brainrots, mutations, disabled = false }: Pr
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            size="lg"
-            disabled={disabled}
-            className="font-mono uppercase tracking-[0.18em]"
-          >
-            + Add
-          </Button>
-        }
-      />
-      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto bg-card/95 p-6 sm:max-w-5xl md:p-8">
+      <DialogTrigger render={<Button disabled={disabled}>+ Add</Button>} />
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto p-6 sm:max-w-5xl md:p-8">
         <DialogTitle className="sr-only">Add brainrot</DialogTitle>
         <DialogDescription className="sr-only">
           Pick a brainrot and an optional mutation.
