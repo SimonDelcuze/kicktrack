@@ -8,15 +8,15 @@ import { cn } from '@/lib/utils';
 import type { Brainrot, Mutation } from '@/shared/types';
 import { createBrainrotAction } from '@/app/add/actions';
 import { formatNumber } from '@/shared/utils/format';
-import { MutationChip } from '@/components/brainrot/MutationChip';
+import { RAINBOW_MUTATION_ID } from '@/shared/data/mutations';
+import { needsLightText } from '@/shared/utils/contrast';
 
 type Props = {
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
-  onComplete?: () => void;
 };
 
-export function AddBrainrotForm({ brainrots, mutations, onComplete }: Props) {
+export function AddBrainrotForm({ brainrots, mutations }: Props) {
   const [brainrotId, setBrainrotId] = useState<number | null>(null);
   const [mutationId, setMutationId] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,7 +31,7 @@ export function AddBrainrotForm({ brainrots, mutations, onComplete }: Props) {
         setMutationId(null);
         setSearch('');
         toast.success('Added to base.');
-        onComplete?.();
+        // Dialog stays open — user can chain more adds.
       } else if (result.error === 'base_full_too_weak') {
         toast.error('Base is full — this brainrot is weaker than your weakest.', {
           description: `${formatNumber(result.newcomerIncome)}/s vs ${formatNumber(result.worstIncome)}/s`,
@@ -55,7 +55,6 @@ export function AddBrainrotForm({ brainrots, mutations, onComplete }: Props) {
       <input type="hidden" name="mutation_id" value={mutationId ?? 'null'} />
       <input type="hidden" name="level" value="1" />
 
-      {/* Search */}
       <Input
         type="search"
         placeholder="Search brainrots…"
@@ -64,7 +63,6 @@ export function AddBrainrotForm({ brainrots, mutations, onComplete }: Props) {
         className="h-10"
       />
 
-      {/* Brainrot grid — no headers */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center text-sm text-muted-foreground">
           No brainrot matches “{search}”.
@@ -98,39 +96,106 @@ export function AddBrainrotForm({ brainrots, mutations, onComplete }: Props) {
         </div>
       )}
 
-      {/* Mutation chips */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setMutationId(null)}
-          className={cn(
-            'rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors',
-            mutationId === null
-              ? 'border-foreground bg-foreground text-background'
-              : 'border-border bg-card text-muted-foreground hover:text-foreground',
-          )}
-        >
-          none
-        </button>
-        {mutations.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setMutationId(m.id)}
-            className="rounded-full"
-            aria-pressed={mutationId === m.id}
-          >
-            <MutationChip mutation={m} selected={mutationId === m.id} variant="chip" />
-          </button>
-        ))}
-      </div>
+      {/* Mutation cards (matching brainrot card style) */}
+      <MutationGrid mutations={mutations} selectedId={mutationId} onSelect={setMutationId} />
 
-      {/* Submit */}
       <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
         <Button type="submit" disabled={brainrotId === null || pending}>
           {pending ? 'Adding…' : 'Add'}
         </Button>
       </div>
     </form>
+  );
+}
+
+type MutationGridProps = {
+  mutations: readonly Mutation[];
+  selectedId: number | null;
+  onSelect: (id: number | null) => void;
+};
+
+export function MutationGrid({ mutations, selectedId, onSelect }: MutationGridProps) {
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {/* None card */}
+      <MutationCardButton
+        label="None"
+        multiplier="×1"
+        selected={selectedId === null}
+        onClick={() => onSelect(null)}
+      />
+      {mutations.map((m) => (
+        <MutationCardButton
+          key={m.id}
+          label={m.name}
+          multiplier={`×${m.multiplier}`}
+          color={m.color_hex}
+          isRainbow={m.id === RAINBOW_MUTATION_ID}
+          selected={selectedId === m.id}
+          onClick={() => onSelect(m.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+type CardButtonProps = {
+  label: string;
+  multiplier: string;
+  color?: string;
+  isRainbow?: boolean;
+  selected: boolean;
+  onClick: () => void;
+};
+
+function MutationCardButton({
+  label,
+  multiplier,
+  color,
+  isRainbow,
+  selected,
+  onClick,
+}: CardButtonProps) {
+  const colored = !!color && !isRainbow;
+  const light = colored && needsLightText(color);
+
+  const baseClass =
+    'flex flex-col items-start justify-between gap-2 rounded-xl border p-3 text-left transition-all min-h-[88px]';
+
+  const stateClass = selected
+    ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background'
+    : 'hover:scale-[1.01]';
+
+  // Variants:
+  // - none: white card, dark text
+  // - colored: colored bg, white/dark text based on contrast
+  // - rainbow: gradient bg, dark text
+  let variantClass: string;
+  let style: React.CSSProperties | undefined;
+  if (isRainbow) {
+    variantClass = 'bg-rainbow text-black border-black/10';
+  } else if (colored) {
+    variantClass = 'border-black/10';
+    style = {
+      backgroundColor: color,
+      color: light ? '#fafafa' : '#0a0a0a',
+    };
+  } else {
+    variantClass = 'border-border bg-card text-foreground';
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(baseClass, variantClass, stateClass)}
+      style={style}
+      aria-pressed={selected}
+    >
+      <span className="text-[13px] font-bold uppercase tracking-wide leading-none">
+        {label}
+      </span>
+      <span className="font-mono text-base font-semibold tabular-nums">{multiplier}</span>
+    </button>
   );
 }

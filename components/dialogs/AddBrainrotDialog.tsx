@@ -27,13 +27,9 @@ export function AddBrainrotDialog({ brainrots, mutations, disabled = false }: Pr
       <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto p-6 sm:max-w-5xl md:p-8">
         <DialogTitle className="sr-only">Add brainrot</DialogTitle>
         <DialogDescription className="sr-only">
-          Pick a brainrot and an optional mutation.
+          Pick a brainrot and an optional mutation. Dialog stays open so you can chain adds.
         </DialogDescription>
-        <AddBrainrotForm
-          brainrots={brainrots}
-          mutations={mutations}
-          onComplete={() => setOpen(false)}
-        />
+        <AddBrainrotForm brainrots={brainrots} mutations={mutations} />
       </DialogContent>
     </Dialog>
   );

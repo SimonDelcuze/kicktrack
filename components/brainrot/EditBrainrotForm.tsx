@@ -9,7 +9,7 @@ import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 import { updateBrainrotAction, deleteBrainrotAction } from '@/app/brainrot/[id]/actions';
 import { formatNumber } from '@/shared/utils/format';
 import { currentMoneyPerSec } from '@/shared/utils/calculations';
-import { MutationChip } from '@/components/brainrot/MutationChip';
+import { MutationGrid } from '@/components/brainrot/AddBrainrotForm';
 
 type Props = {
   user: UserBrainrot;
@@ -109,32 +109,8 @@ export function EditBrainrotForm({ user, brainrots, mutations, onComplete }: Pro
         </div>
       )}
 
-      {/* Mutation chips */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setMutationId(null)}
-          className={cn(
-            'rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors',
-            mutationId === null
-              ? 'border-foreground bg-foreground text-background'
-              : 'border-border bg-card text-muted-foreground hover:text-foreground',
-          )}
-        >
-          none
-        </button>
-        {mutations.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setMutationId(m.id)}
-            className="rounded-full"
-            aria-pressed={mutationId === m.id}
-          >
-            <MutationChip mutation={m} selected={mutationId === m.id} variant="chip" />
-          </button>
-        ))}
-      </div>
+      {/* Mutation cards */}
+      <MutationGrid mutations={mutations} selectedId={mutationId} onSelect={setMutationId} />
 
       {/* Income preview */}
       {previewIncome !== null && (
