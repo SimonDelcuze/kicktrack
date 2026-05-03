@@ -18,7 +18,7 @@ export function BrainrotCard({ user, brainrot, mutation, position, onClick }: Pr
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-foreground/40 min-h-[140px]"
+      className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-foreground/40 min-h-[120px]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="text-sm font-semibold leading-tight text-foreground">
@@ -32,12 +32,7 @@ export function BrainrotCard({ user, brainrot, mutation, position, onClick }: Pr
       </div>
 
       <div className="mt-auto flex items-end justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <div className="font-mono text-xs text-muted-foreground">
-            lvl <span className="font-semibold text-foreground">{user.level}</span>
-          </div>
-          {mutation && <MutationChip mutation={mutation} variant="chip" />}
-        </div>
+        <div>{mutation && <MutationChip mutation={mutation} variant="chip" />}</div>
         <div className="font-mono text-xl font-semibold tabular-nums text-foreground">
           {formatNumber(income)}
           <span className="ml-0.5 text-xs font-normal text-muted-foreground">/s</span>
