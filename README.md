@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KickTrack
 
-## Getting Started
+Personal Roblox "Kick a Lucky Block" base tracker. Solo, no auth, hosted on Vercel.
 
-First, run the development server:
+## Local dev
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # fill KV_REST_API_URL and KV_REST_API_TOKEN
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Verification
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm test     # unit tests (calculations, base service, format)
+pnpm lint     # ESLint
+pnpm build    # production build (also typechecks)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy
 
-## Learn More
+1. Push to GitHub.
+2. On Vercel, "New Project" → import the repo.
+3. In project Storage tab: Create → Upstash for Redis (or Vercel KV). Connect to project.
+4. The `KV_REST_API_URL` and `KV_REST_API_TOKEN` env vars are auto-populated.
+5. Deploy.
 
-To learn more about Next.js, take a look at the following resources:
+## Tech
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Next.js 16 (App Router), TypeScript, Tailwind, shadcn/ui, Zod, `@upstash/redis`, Vitest.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Catalog data
 
-## Deploy on Vercel
+Edit files in `shared/data/` (`rarities.ts`, `mutations.ts`, `brainrots.ts`) and commit. Changes deploy automatically on push.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Architecture
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/` — UI (Server Components by default)
+- `server/` — server-only services (`base.ts` = KV CRUD)
+- `shared/` — types, Zod schemas, pure utils, catalog data
+- `components/` — UI components (shadcn primitives in `ui/`)
+- `tests/` — Vitest unit tests
