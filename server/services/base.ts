@@ -7,14 +7,61 @@ import {
   type UserBrainrotInput,
 } from '@/shared/schemas/user-brainrot';
 import type { UserBrainrot } from '@/shared/types';
+import { brainrots } from '@/shared/data/brainrots';
+import { mutations } from '@/shared/data/mutations';
+import { currentMoneyPerSec } from '@/shared/utils/calculations';
+
+export const MAX_BASE_SIZE = 30;
+
+export type AddResult =
+  | { ok: true; entry: UserBrainrot; evictedId?: string }
+  | { ok: false; error: 'base_full_too_weak'; worstIncome: number; newcomerIncome: number };
+
+function incomeOf(ub: UserBrainrot): number {
+  const brainrot = brainrots.find((b) => b.id === ub.brainrot_id);
+  if (!brainrot) return 0;
+  const mutation =
+    ub.mutation_id != null ? mutations.find((m) => m.id === ub.mutation_id) ?? null : null;
+  return currentMoneyPerSec(brainrot, ub.level, mutation);
+}
 
 export async function getBase(): Promise<UserBrainrot[]> {
   const raw = await redis.get<UserBrainrot[]>(BASE_KEY);
   return raw ?? [];
 }
 
-export async function addBrainrot(input: UserBrainrotInput): Promise<UserBrainrot> {
+export async function addBrainrot(input: UserBrainrotInput): Promise<AddResult> {
   const validated = userBrainrotInputSchema.parse(input);
+
+  const brainrot = brainrots.find((b) => b.id === validated.brainrot_id);
+  if (!brainrot) {
+    throw new Error(`Unknown brainrot id ${validated.brainrot_id}`);
+  }
+  const mutation =
+    validated.mutation_id != null
+      ? mutations.find((m) => m.id === validated.mutation_id) ?? null
+      : null;
+
+  const newcomerIncome = currentMoneyPerSec(brainrot, validated.level, mutation);
+  const base = await getBase();
+
+  let nextBase = base;
+  let evictedId: string | undefined;
+
+  if (base.length >= MAX_BASE_SIZE) {
+    // Find weakest current entry.
+    const sortedAsc = [...base].sort((a, b) => incomeOf(a) - incomeOf(b));
+    const weakest = sortedAsc[0];
+    const worstIncome = incomeOf(weakest);
+
+    if (newcomerIncome < worstIncome) {
+      return { ok: false, error: 'base_full_too_weak', worstIncome, newcomerIncome };
+    }
+
+    nextBase = base.filter((b) => b.id !== weakest.id);
+    evictedId = weakest.id;
+  }
+
   const now = new Date().toISOString();
   const entry: UserBrainrot = {
     id: uuidv4(),
@@ -25,9 +72,9 @@ export async function addBrainrot(input: UserBrainrotInput): Promise<UserBrainro
     created_at: now,
     updated_at: now,
   };
-  const base = await getBase();
-  await redis.set(BASE_KEY, [...base, entry]);
-  return entry;
+
+  await redis.set(BASE_KEY, [...nextBase, entry]);
+  return { ok: true, entry, evictedId };
 }
 
 export async function updateBrainrot(
@@ -65,5 +112,8 @@ export async function deleteBrainrot(id: string): Promise<boolean> {
 
 export async function replaceBase(incoming: UserBrainrot[]): Promise<void> {
   const validated = userBrainrotArraySchema.parse(incoming);
+  if (validated.length > MAX_BASE_SIZE) {
+    throw new Error(`Cannot replace base with more than ${MAX_BASE_SIZE} entries`);
+  }
   await redis.set(BASE_KEY, validated);
 }
