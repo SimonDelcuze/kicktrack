@@ -1,9 +1,9 @@
 import 'server-only';
 import { v4 as uuidv4 } from 'uuid';
-import { z } from 'zod';
 import { redis, BASE_KEY } from '@/server/lib/kv';
 import {
   userBrainrotInputSchema,
+  userBrainrotArraySchema,
   type UserBrainrotInput,
 } from '@/shared/schemas/user-brainrot';
 import type { UserBrainrot } from '@/shared/types';
@@ -63,15 +63,7 @@ export async function deleteBrainrot(id: string): Promise<boolean> {
   return true;
 }
 
-const replaceBaseSchema = z.array(
-  userBrainrotInputSchema.extend({
-    id: z.string().min(1),
-    created_at: z.string(),
-    updated_at: z.string(),
-  }),
-);
-
 export async function replaceBase(incoming: UserBrainrot[]): Promise<void> {
-  const validated = replaceBaseSchema.parse(incoming);
+  const validated = userBrainrotArraySchema.parse(incoming);
   await redis.set(BASE_KEY, validated);
 }

@@ -107,7 +107,14 @@ describe('deleteBrainrot', () => {
 describe('replaceBase', () => {
   it('writes the validated array', async () => {
     const incoming = [
-      { id: 'a', brainrot_id: 1, mutation_id: null, level: 5, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z' },
+      {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        brainrot_id: 1,
+        mutation_id: null,
+        level: 5,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
     ];
     mockRedis.set.mockResolvedValueOnce('OK');
     await replaceBase(incoming as any);
@@ -116,5 +123,12 @@ describe('replaceBase', () => {
 
   it('rejects invalid arrays', async () => {
     await expect(replaceBase([{ bogus: true }] as any)).rejects.toThrow();
+  });
+
+  it('rejects arrays with non-UUID ids', async () => {
+    const incoming = [
+      { id: 'not-a-uuid', brainrot_id: 1, mutation_id: null, level: 5, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z' },
+    ];
+    await expect(replaceBase(incoming as any)).rejects.toThrow();
   });
 });
