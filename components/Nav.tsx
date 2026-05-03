@@ -3,7 +3,7 @@ import { SettingsDialog } from '@/components/dialogs/SettingsDialog';
 
 export function Nav() {
   return (
-    <nav className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
+    <nav className="sticky top-0 z-30 border-b border-border bg-background">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
         <Link
           href="/"
