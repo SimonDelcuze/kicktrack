@@ -1,10 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { addBrainrot, type AddResult } from '@/server/services/base';
+import { addBrainrot, getBase, type AddResult } from '@/server/services/base';
 import { userBrainrotInputSchema } from '@/shared/schemas/user-brainrot';
+import type { UserBrainrot } from '@/shared/types';
 
-export async function createBrainrotAction(formData: FormData): Promise<AddResult> {
+export type CreateActionResult = AddResult & { previousBase: UserBrainrot[] };
+
+export async function createBrainrotAction(formData: FormData): Promise<CreateActionResult> {
   const input = userBrainrotInputSchema.parse({
     brainrot_id: Number(formData.get('brainrot_id')),
     mutation_id:
@@ -14,9 +17,10 @@ export async function createBrainrotAction(formData: FormData): Promise<AddResul
     level: Number(formData.get('level')),
     nickname: (formData.get('nickname') as string | null) || undefined,
   });
+  const previousBase: UserBrainrot[] = await getBase();
   const result = await addBrainrot(input);
   if (result.ok) {
     revalidatePath('/');
   }
-  return result;
+  return { ...result, previousBase };
 }

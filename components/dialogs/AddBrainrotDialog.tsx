@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AddBrainrotForm } from '@/components/brainrot/AddBrainrotForm';
+import { useHistory } from '@/components/HistoryProvider';
 import type { Brainrot, Mutation } from '@/shared/types';
 
 type Props = {
@@ -28,6 +29,8 @@ export function AddBrainrotDialog({
   onAdded,
   disabled = false,
 }: Props) {
+  const { recordMutation } = useHistory();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger render={<Button disabled={disabled}>+ Add</Button>} />
@@ -36,7 +39,12 @@ export function AddBrainrotDialog({
         <DialogDescription className="sr-only">
           Pick a brainrot and an optional mutation. Dialog stays open so you can chain adds.
         </DialogDescription>
-        <AddBrainrotForm brainrots={brainrots} mutations={mutations} onAdded={onAdded} />
+        <AddBrainrotForm
+          brainrots={brainrots}
+          mutations={mutations}
+          onAdded={onAdded}
+          onMutated={recordMutation}
+        />
       </DialogContent>
     </Dialog>
   );

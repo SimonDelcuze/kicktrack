@@ -15,9 +15,10 @@ type Props = {
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
   onAdded?: (id: string) => void;
+  onMutated?: (previousBase: import('@/shared/types').UserBrainrot[]) => void;
 };
 
-export function AddBrainrotForm({ brainrots, mutations, onAdded }: Props) {
+export function AddBrainrotForm({ brainrots, mutations, onAdded, onMutated }: Props) {
   const [brainrotId, setBrainrotId] = useState<number | null>(null);
   const [mutationId, setMutationId] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
@@ -32,6 +33,7 @@ export function AddBrainrotForm({ brainrots, mutations, onAdded }: Props) {
         setMutationId(null);
         setSearch('');
         toast.success('Added to base.');
+        onMutated?.(result.previousBase);
         onAdded?.(result.entry.id);
         // Dialog stays open — user can chain more adds.
       } else if (result.error === 'base_full_too_weak') {

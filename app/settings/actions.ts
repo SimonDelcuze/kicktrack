@@ -3,13 +3,16 @@
 import { revalidatePath } from 'next/cache';
 import { getBase, replaceBase } from '@/server/services/base';
 import { userBrainrotArraySchema } from '@/shared/schemas/user-brainrot';
+import type { UserBrainrot } from '@/shared/types';
 
 export async function exportBaseAction(): Promise<string> {
   const base = await getBase();
   return JSON.stringify(base, null, 2);
 }
 
-export async function importBaseAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+export async function importBaseAction(
+  formData: FormData,
+): Promise<{ ok: true; previousBase: UserBrainrot[] } | { ok: false; error: string }> {
   const file = formData.get('file');
   if (!(file instanceof File)) return { ok: false, error: 'No file provided' };
   if (file.size > 1024 * 1024) return { ok: false, error: 'File too large (max 1MB)' };
@@ -27,7 +30,8 @@ export async function importBaseAction(formData: FormData): Promise<{ ok: boolea
     return { ok: false, error: 'JSON does not match expected shape' };
   }
 
+  const previousBase = await getBase();
   await replaceBase(result.data);
   revalidatePath('/');
-  return { ok: true };
+  return { ok: true, previousBase };
 }

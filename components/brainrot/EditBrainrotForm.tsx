@@ -16,9 +16,16 @@ type Props = {
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
   onComplete?: () => void;
+  onMutated?: (previousBase: UserBrainrot[]) => void;
 };
 
-export function EditBrainrotForm({ user, brainrots, mutations, onComplete }: Props) {
+export function EditBrainrotForm({
+  user,
+  brainrots,
+  mutations,
+  onComplete,
+  onMutated,
+}: Props) {
   const [brainrotId, setBrainrotId] = useState<number>(user.brainrot_id);
   const [mutationId, setMutationId] = useState<number | null>(user.mutation_id);
   const [pending, setPending] = useState(false);
@@ -34,7 +41,8 @@ export function EditBrainrotForm({ user, brainrots, mutations, onComplete }: Pro
   async function handleUpdate(formData: FormData) {
     setPending(true);
     try {
-      await updateBrainrotAction(user.id, formData);
+      const r = await updateBrainrotAction(user.id, formData);
+      onMutated?.(r.previousBase);
       toast.success('Saved.');
       onComplete?.();
     } finally {
@@ -45,7 +53,8 @@ export function EditBrainrotForm({ user, brainrots, mutations, onComplete }: Pro
   async function handleDelete() {
     setPending(true);
     try {
-      await deleteBrainrotAction(user.id);
+      const r = await deleteBrainrotAction(user.id);
+      onMutated?.(r.previousBase);
       toast.success('Removed.');
       onComplete?.();
     } finally {

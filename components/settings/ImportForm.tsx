@@ -4,8 +4,13 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { importBaseAction, exportBaseAction } from '@/app/settings/actions';
+import type { UserBrainrot } from '@/shared/types';
 
-export function ImportForm() {
+type Props = {
+  onMutated?: (previousBase: UserBrainrot[]) => void;
+};
+
+export function ImportForm({ onMutated }: Props = {}) {
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
@@ -25,11 +30,12 @@ export function ImportForm() {
   function handleImport(formData: FormData) {
     start(async () => {
       const res = await importBaseAction(formData);
-      setMessage(
-        res.ok
-          ? { kind: 'ok', text: 'Base imported successfully.' }
-          : { kind: 'err', text: res.error ?? 'Unknown error' },
-      );
+      if (res.ok) {
+        onMutated?.(res.previousBase);
+        setMessage({ kind: 'ok', text: 'Base imported successfully.' });
+      } else {
+        setMessage({ kind: 'err', text: res.error });
+      }
     });
   }
 

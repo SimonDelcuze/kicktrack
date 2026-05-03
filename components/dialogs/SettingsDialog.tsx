@@ -9,9 +9,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ImportForm } from '@/components/settings/ImportForm';
+import { useHistory } from '@/components/HistoryProvider';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
+  const { recordMutation } = useHistory();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -32,7 +34,7 @@ export function SettingsDialog() {
           Backup or restore your base.
         </DialogDescription>
         <div className="mt-5">
-          <ImportForm />
+          <ImportForm onMutated={recordMutation} />
         </div>
       </DialogContent>
     </Dialog>
