@@ -17,6 +17,9 @@ type Props = {
 
 export function DashboardClient({ base, brainrots, mutations }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [recentlyAddedIds, setRecentlyAddedIds] = useState<string[]>([]);
+
   const editing = editingId ? base.find((b) => b.id === editingId) ?? null : null;
 
   const enriched = useMemo(() => {
@@ -41,11 +44,27 @@ export function DashboardClient({ base, brainrots, mutations }: Props) {
 
   const isFull = base.length >= MAX_BASE_SIZE;
 
+  function handleAddOpenChange(open: boolean) {
+    setAddOpen(open);
+    // Clear recents at the start of a new add session.
+    if (open) setRecentlyAddedIds([]);
+  }
+
+  function handleAdded(id: string) {
+    setRecentlyAddedIds((prev) => [...prev, id]);
+  }
+
   return (
     <section>
       <header className="mb-5 flex items-center justify-between gap-4">
         <h2 className="text-lg font-semibold tracking-tight">Your base</h2>
-        <AddBrainrotDialog brainrots={brainrots} mutations={mutations} />
+        <AddBrainrotDialog
+          brainrots={brainrots}
+          mutations={mutations}
+          open={addOpen}
+          onOpenChange={handleAddOpenChange}
+          onAdded={handleAdded}
+        />
       </header>
 
       {base.length === 0 ? (
@@ -59,6 +78,7 @@ export function DashboardClient({ base, brainrots, mutations }: Props) {
               brainrot={entry.brainrot}
               mutation={entry.mutation}
               position={idx + 1}
+              isRecent={recentlyAddedIds.includes(entry.user.id)}
               onClick={() => setEditingId(entry.user.id)}
             />
           ))}
