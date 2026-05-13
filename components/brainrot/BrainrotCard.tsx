@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/shared/utils/format';
 import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
-import { currentMoneyPerSec } from '@/shared/utils/calculations';
+import { currentMoneyPerSec, maxLevelIncome } from '@/shared/utils/calculations';
 import { MutationChip } from '@/components/brainrot/MutationChip';
 
 type Props = {
@@ -22,6 +22,7 @@ export function BrainrotCard({
   onClick,
 }: Props) {
   const income = currentMoneyPerSec(brainrot, user.level, mutation);
+  const maxIncome = maxLevelIncome(brainrot);
 
   return (
     <button
@@ -51,6 +52,9 @@ export function BrainrotCard({
 
       <div className="mt-auto flex items-end justify-between gap-3">
         <div>{mutation && <MutationChip mutation={mutation} variant="chip" />}</div>
+        <div className="font-mono text-xs tabular-nums text-muted-foreground">
+          {formatNumber(maxIncome)}
+        </div>
         <div className="font-mono text-xl font-semibold tabular-nums text-foreground">
           {formatNumber(income)}
           <span className="ml-0.5 text-xs font-normal text-muted-foreground">/s</span>

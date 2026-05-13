@@ -2,6 +2,10 @@ import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 
 export const MAX_LEVEL = 75;
 
+export function maxLevelIncome(brainrot: Brainrot): number {
+  return getMoneyPerSecAtLevel(brainrot, MAX_LEVEL);
+}
+
 export function getMoneyPerSecAtLevel(brainrot: Brainrot, level: number): number {
   if (!Number.isInteger(level) || level < 1 || level > MAX_LEVEL) {
     throw new Error(`level must be an integer between 1 and ${MAX_LEVEL}, got ${level}`);
