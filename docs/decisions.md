@@ -14,8 +14,7 @@
 - À faire : remplir `shared/data/brainrots.ts` avec les vraies données du jeu (pour l'instant 4 placeholder).
 - Open : confirmer mutations cumulables ou pas + formule exacte de level.
 
-## 2026-05-13 — Simon (level growth + max display)
-- Formule level confirmée : `level_growth_factor = 1.5` pour tous les brainrots (×1.5 par level, max level = 75).
-- Convention : level 1 = base, level 75 = base × 1.5^74 (cohérent avec `getMoneyPerSecAtLevel`).
+## 2026-05-13 — Simon (max-level display)
 - Ajout `maxLevelIncome(brainrot)` + affichage du max sur chaque `BrainrotCard` (entre la mutation et l'income/s).
-- `formatNumber` étendu (Qa/Qi/Sx/Sp/Oc/No/Dc) pour gérer les ordres de grandeur au max level.
+- `formatNumber` étendu (Qa/Qi/Sx/Sp/Oc/No/Dc) pour anticiper les grands ordres de grandeur.
+- `level_growth_factor` reste à 1.05 (placeholder, la formule exacte est toujours à confirmer — on a testé 1.5 mais ça donne des chiffres incohérents).
