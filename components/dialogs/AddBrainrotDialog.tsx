@@ -22,6 +22,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onMutatedBase?: (previousBase: UserBrainrot[]) => void;
   onMutatedTrade?: (previousTrade: UserBrainrot[], previousLog: TradeLogEvent[]) => void;
+  onEnqueueTradeAdd?: (brainrot_id: number, mutation_id: number | null) => void;
+  onEnqueueTradeRemove?: (brainrot_id: number, mutation_id: number | null) => void;
   disabled?: boolean;
 };
 
@@ -34,6 +36,8 @@ export function AddBrainrotDialog({
   onOpenChange,
   onMutatedBase,
   onMutatedTrade,
+  onEnqueueTradeAdd,
+  onEnqueueTradeRemove,
   disabled = false,
 }: Props) {
   return (
@@ -51,6 +55,8 @@ export function AddBrainrotDialog({
           currentEntries={currentEntries}
           onMutatedBase={onMutatedBase}
           onMutatedTrade={onMutatedTrade}
+          onEnqueueTradeAdd={onEnqueueTradeAdd}
+          onEnqueueTradeRemove={onEnqueueTradeRemove}
         />
       </DialogContent>
     </Dialog>

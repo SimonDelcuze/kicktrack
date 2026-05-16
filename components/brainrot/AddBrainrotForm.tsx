@@ -26,6 +26,8 @@ type Props = {
   currentEntries: readonly UserBrainrot[];
   onMutatedBase?: (previousBase: UserBrainrot[]) => void;
   onMutatedTrade?: (previousTrade: UserBrainrot[], previousLog: import('@/shared/types').TradeLogEvent[]) => void;
+  onEnqueueTradeAdd?: (brainrot_id: number, mutation_id: number | null) => void;
+  onEnqueueTradeRemove?: (brainrot_id: number, mutation_id: number | null) => void;
 };
 
 export function AddBrainrotForm({
@@ -35,6 +37,8 @@ export function AddBrainrotForm({
   currentEntries,
   onMutatedBase,
   onMutatedTrade,
+  onEnqueueTradeAdd,
+  onEnqueueTradeRemove,
 }: Props) {
   const [brainrotId, setBrainrotId] = useState<number | null>(null);
   const [mutationId, setMutationId] = useState<number | null>(null);
@@ -74,10 +78,15 @@ export function AddBrainrotForm({
           });
         }
       } else {
-        const result = await addToTradeAction(brainrotId, mutationId);
-        if (result.ok) {
-          onMutatedTrade?.(result.previousTrade, result.previousLog);
+        if (onEnqueueTradeAdd) {
+          onEnqueueTradeAdd(brainrotId, mutationId);
           toast.success('Added to trade.');
+        } else {
+          const result = await addToTradeAction(brainrotId, mutationId);
+          if (result.ok) {
+            onMutatedTrade?.(result.previousTrade, result.previousLog);
+            toast.success('Added to trade.');
+          }
         }
       }
     } finally {
@@ -96,10 +105,15 @@ export function AddBrainrotForm({
           toast.success('Removed from base.');
         }
       } else {
-        const result = await removeOneFromTradeAction(brainrotId, mutationId);
-        if (result.ok) {
-          onMutatedTrade?.(result.previousTrade, result.previousLog);
+        if (onEnqueueTradeRemove) {
+          onEnqueueTradeRemove(brainrotId, mutationId);
           toast.success('Removed from trade.');
+        } else {
+          const result = await removeOneFromTradeAction(brainrotId, mutationId);
+          if (result.ok) {
+            onMutatedTrade?.(result.previousTrade, result.previousLog);
+            toast.success('Removed from trade.');
+          }
         }
       }
     } finally {

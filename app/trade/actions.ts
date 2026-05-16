@@ -52,3 +52,22 @@ export async function setTradeAndLogAction(
   revalidatePath('/');
   return { previousTrade, previousLog };
 }
+
+export type TradeBatchOp =
+  | { kind: 'add'; brainrot_id: number; mutation_id: number | null }
+  | { kind: 'remove'; brainrot_id: number; mutation_id: number | null };
+
+export async function applyTradeBatchAction(
+  ops: TradeBatchOp[],
+): Promise<{ ok: true }> {
+  for (const op of ops) {
+    if (op.kind === 'add') {
+      await addToTrade(op.brainrot_id, op.mutation_id);
+    } else {
+      // null when no entry matches — silently skip (optimistic state drifted)
+      await removeOneByComboFromTrade(op.brainrot_id, op.mutation_id);
+    }
+  }
+  if (ops.length > 0) revalidatePath('/');
+  return { ok: true };
+}

@@ -28,3 +28,10 @@
 - Undo/redo Trade séparé (flèches dans la toolbar du tab Trade) ; Ctrl+Z reste dédié à Base.
 - Spec : `docs/superpowers/specs/2026-05-16-trade-section-design.md`. Plan : `docs/superpowers/plans/2026-05-16-trade-section.md`.
 - Build + test + lint = OK (54 tests verts).
+
+## 2026-05-16 — Simon (Trade op cache)
+- Click sur ± dans Trade ne touche plus la DB directement — un cache d'opérations local est drainé toutes les 10s (+ sur unmount / tab hide / beforeunload).
+- Indicateur "Saving N…" quand la queue n'est pas vide.
+- Le chat log reste basé sur le state serveur (les events apparaissent au flush suivant — acceptable).
+- Undo Trade clear la queue avant de snapper l'état serveur au snapshot.
+- Base reste instant (l'éviction côté serveur complique le batch, et le cap 30 fait que les clics sont rares).
