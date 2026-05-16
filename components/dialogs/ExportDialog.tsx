@@ -15,7 +15,6 @@ import { formatNumber } from '@/shared/utils/format';
 import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 
 type Props = {
-  base: UserBrainrot[];
   trade: UserBrainrot[];
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
@@ -31,7 +30,6 @@ function formatMutationName(m: Mutation): string {
 }
 
 function buildExportText(
-  base: UserBrainrot[],
   trade: UserBrainrot[],
   brainrots: readonly Brainrot[],
   mutations: readonly Mutation[],
@@ -41,7 +39,7 @@ function buildExportText(
     { brainrot: Brainrot; mutation: Mutation | null; count: number; income: number }
   >();
 
-  for (const entry of [...base, ...trade]) {
+  for (const entry of trade) {
     const brainrot = brainrots.find((b) => b.id === entry.brainrot_id);
     if (!brainrot) continue;
     const mutation =
@@ -79,13 +77,13 @@ function buildExportText(
   return '```\n' + body + '\n```';
 }
 
-export function ExportDialog({ base, trade, brainrots, mutations }: Props) {
+export function ExportDialog({ trade, brainrots, mutations }: Props) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
 
   function handleOpen(next: boolean) {
     if (next) {
-      const built = buildExportText(base, trade, brainrots, mutations);
+      const built = buildExportText(trade, brainrots, mutations);
       setText(built);
       // Copy synchronously in the user gesture chain for max browser compatibility.
       navigator.clipboard
@@ -109,8 +107,8 @@ export function ExportDialog({ base, trade, brainrots, mutations }: Props) {
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto p-6">
         <DialogTitle>Export</DialogTitle>
         <DialogDescription className="sr-only">
-          Discord-ready code block of all brainrots in base and trade, sorted by max-level
-          income. Auto-copied to clipboard.
+          Discord-ready code block of the trade stash, sorted by max-level income.
+          Auto-copied to clipboard.
         </DialogDescription>
         <pre className="mt-2 max-h-[60vh] overflow-auto rounded-md border border-border bg-card p-4 font-mono text-xs leading-relaxed">
           {text}

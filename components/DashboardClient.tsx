@@ -35,12 +35,7 @@ export function DashboardClient({ base, trade, tradeLog, brainrots, mutations }:
             Trade
           </TabButton>
         </nav>
-        <ExportDialog
-          base={base}
-          trade={trade}
-          brainrots={brainrots}
-          mutations={mutations}
-        />
+        <ExportDialog trade={trade} brainrots={brainrots} mutations={mutations} />
       </div>
 
       {section === 'base' ? (
