@@ -52,81 +52,118 @@ export function AddBrainrotForm({
     return sorted.filter((b) => b.name.toLowerCase().includes(q));
   }, [brainrots, search]);
 
-  const count = useMemo(() => {
+  const actualCount = useMemo(() => {
     if (brainrotId === null) return 0;
     return currentEntries.filter(
       (e) => e.brainrot_id === brainrotId && e.mutation_id === mutationId && e.level === 1,
     ).length;
   }, [currentEntries, brainrotId, mutationId]);
 
+  // Local delta the user has accumulated with ± buttons. Save applies it.
+  // Reset to 0 whenever the selected combo changes (see selectBrainrot/Mutation).
+  const [userDelta, setUserDelta] = useState(0);
+
+  const targetCount = Math.max(0, actualCount + userDelta);
+  const delta = targetCount - actualCount;
+
+  function selectBrainrot(id: number) {
+    if (id === brainrotId) return;
+    setBrainrotId(id);
+    setUserDelta(0);
+  }
+
+  function selectMutation(id: number | null) {
+    if (id === mutationId) return;
+    setMutationId(id);
+    setUserDelta(0);
+  }
+
   function handleIncrement() {
     if (brainrotId === null) return;
-
-    // Trade with enqueue callback: synchronous, no pending state, no toast spam.
-    if (section === 'trade' && onEnqueueTradeAdd) {
-      onEnqueueTradeAdd(brainrotId, mutationId);
-      return;
-    }
-
-    // Async path (base, or trade without enqueue).
-    void (async () => {
-      setPending(true);
-      try {
-        if (section === 'base') {
-          const formData = new FormData();
-          formData.set('brainrot_id', String(brainrotId));
-          formData.set('mutation_id', mutationId === null ? 'null' : String(mutationId));
-          formData.set('level', '1');
-          const result = await createBrainrotAction(formData);
-          if (result.ok) {
-            onMutatedBase?.(result.previousBase);
-            toast.success('Added to base.');
-          } else if (result.error === 'base_full_too_weak') {
-            toast.error('Base is full — this brainrot is weaker than your weakest.', {
-              description: `${formatNumber(result.newcomerIncome)}/s vs ${formatNumber(result.worstIncome)}/s`,
-            });
-          }
-        } else {
-          const result = await addToTradeAction(brainrotId, mutationId);
-          if (result.ok) {
-            onMutatedTrade?.(result.previousTrade, result.previousLog);
-            toast.success('Added to trade.');
-          }
-        }
-      } finally {
-        setPending(false);
-      }
-    })();
+    setUserDelta((d) => d + 1);
   }
 
   function handleDecrement() {
-    if (brainrotId === null || count === 0) return;
+    if (brainrotId === null || targetCount === 0) return;
+    setUserDelta((d) => d - 1);
+  }
 
-    if (section === 'trade' && onEnqueueTradeRemove) {
-      onEnqueueTradeRemove(brainrotId, mutationId);
+  async function handleSave() {
+    if (brainrotId === null || delta === 0) return;
+
+    // Trade with enqueue callbacks: synchronous, no pending state.
+    if (section === 'trade' && onEnqueueTradeAdd && onEnqueueTradeRemove) {
+      if (delta > 0) {
+        for (let i = 0; i < delta; i++) onEnqueueTradeAdd(brainrotId, mutationId);
+      } else {
+        for (let i = 0; i < -delta; i++) onEnqueueTradeRemove(brainrotId, mutationId);
+      }
       return;
     }
 
-    void (async () => {
-      setPending(true);
-      try {
-        if (section === 'base') {
-          const result = await removeOneByComboFromBaseAction(brainrotId, mutationId, 1);
-          if (result.ok) {
-            onMutatedBase?.(result.previousBase);
-            toast.success('Removed from base.');
-          }
-        } else {
-          const result = await removeOneFromTradeAction(brainrotId, mutationId);
-          if (result.ok) {
-            onMutatedTrade?.(result.previousTrade, result.previousLog);
-            toast.success('Removed from trade.');
+    // Async path (base, or trade without enqueue callback). One server call per
+    // unit op — could be batched in the future, but keeps the eviction logic
+    // for base intact.
+    setPending(true);
+    try {
+      let applied = 0;
+      let stoppedReason: string | null = null;
+
+      if (delta > 0) {
+        for (let i = 0; i < delta; i++) {
+          if (section === 'base') {
+            const formData = new FormData();
+            formData.set('brainrot_id', String(brainrotId));
+            formData.set('mutation_id', mutationId === null ? 'null' : String(mutationId));
+            formData.set('level', '1');
+            const result = await createBrainrotAction(formData);
+            if (result.ok) {
+              onMutatedBase?.(result.previousBase);
+              applied++;
+            } else if (result.error === 'base_full_too_weak') {
+              stoppedReason = `Base full at +${applied} — newcomer ${formatNumber(
+                result.newcomerIncome,
+              )}/s < weakest ${formatNumber(result.worstIncome)}/s`;
+              break;
+            }
+          } else {
+            const result = await addToTradeAction(brainrotId, mutationId);
+            if (result.ok) {
+              onMutatedTrade?.(result.previousTrade, result.previousLog);
+              applied++;
+            }
           }
         }
-      } finally {
-        setPending(false);
+      } else {
+        for (let i = 0; i < -delta; i++) {
+          if (section === 'base') {
+            const result = await removeOneByComboFromBaseAction(brainrotId, mutationId, 1);
+            if (result.ok) {
+              onMutatedBase?.(result.previousBase);
+              applied++;
+            } else break;
+          } else {
+            const result = await removeOneFromTradeAction(brainrotId, mutationId);
+            if (result.ok) {
+              onMutatedTrade?.(result.previousTrade, result.previousLog);
+              applied++;
+            } else break;
+          }
+        }
       }
-    })();
+
+      if (stoppedReason) {
+        toast.error(stoppedReason, {
+          description: applied > 0 ? `${applied} applied before stopping.` : undefined,
+        });
+      } else if (applied > 0) {
+        toast.success(
+          delta > 0 ? `Added ${applied}.` : `Removed ${applied}.`,
+        );
+      }
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -151,7 +188,7 @@ export function AddBrainrotForm({
               <button
                 key={b.id}
                 type="button"
-                onClick={() => setBrainrotId(b.id)}
+                onClick={() => selectBrainrot(b.id)}
                 className={cn(
                   'flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-colors',
                   isSelected
@@ -172,15 +209,20 @@ export function AddBrainrotForm({
         </div>
       )}
 
-      <MutationGrid mutations={mutations} selectedId={mutationId} onSelect={setMutationId} />
+      <MutationGrid mutations={mutations} selectedId={mutationId} onSelect={selectMutation} />
 
-      <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5">
+        {brainrotId !== null && (
+          <span className="font-mono text-xs text-muted-foreground">
+            Saved: <span className="tabular-nums text-foreground">{actualCount}</span>
+          </span>
+        )}
         <div className="flex items-stretch gap-2">
           <button
             type="button"
             onClick={handleDecrement}
-            disabled={brainrotId === null || pending || count === 0}
-            aria-label="Remove one"
+            disabled={brainrotId === null || pending || targetCount === 0}
+            aria-label="Decrement target"
             className={cn(
               'h-11 w-14 rounded-md border border-border bg-card font-mono text-lg font-semibold',
               'hover:border-foreground/40',
@@ -190,22 +232,38 @@ export function AddBrainrotForm({
             −
           </button>
           <span className="flex h-11 min-w-[3rem] items-center justify-center font-mono text-lg font-semibold tabular-nums">
-            {count}
+            {targetCount}
           </span>
           <button
             type="button"
             onClick={handleIncrement}
             disabled={brainrotId === null || pending}
-            aria-label="Add one"
+            aria-label="Increment target"
             className={cn(
-              'h-11 w-14 rounded-md border border-foreground bg-foreground font-mono text-lg font-semibold text-background',
-              'hover:opacity-90',
+              'h-11 w-14 rounded-md border border-border bg-card font-mono text-lg font-semibold',
+              'hover:border-foreground/40',
               'disabled:cursor-not-allowed disabled:opacity-40',
             )}
           >
             +
           </button>
         </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={brainrotId === null || pending || delta === 0}
+          className={cn(
+            'h-11 rounded-md border border-foreground bg-foreground px-4 font-mono text-sm font-semibold text-background',
+            'hover:opacity-90',
+            'disabled:cursor-not-allowed disabled:opacity-40',
+          )}
+        >
+          {pending
+            ? 'Saving…'
+            : delta === 0
+              ? 'Save'
+              : `Save ${delta > 0 ? '+' : ''}${delta}`}
+        </button>
       </div>
     </div>
   );
