@@ -7,7 +7,6 @@ import { TradeCard } from '@/components/brainrot/TradeCard';
 import { TradeHistoryLog } from '@/components/trade/TradeHistoryLog';
 import {
   applyTradeBatchAction,
-  setTradeAndLogAction,
   type TradeBatchOp,
 } from '@/app/trade/actions';
 import { MAX_LEVEL, currentMoneyPerSec } from '@/shared/utils/calculations';
@@ -23,14 +22,21 @@ type Props = {
   mutations: readonly Mutation[];
 };
 
-type Snapshot = { trade: UserBrainrot[]; log: TradeLogEvent[] };
-
 export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
   const [addOpen, setAddOpen] = useState(false);
-  const [queue, setQueue] = useState<TradeBatchOp[]>([]);
-  const [past, setPast] = useState<Snapshot[]>([]);
-  const [future, setFuture] = useState<Snapshot[]>([]);
+  // The queue is the source of truth for pending ops. We keep both a ref (read
+  // synchronously inside rapid event handlers without stale-closure issues)
+  // and a state (for re-rendering). Snapshots in past/future are queue states.
+  const queueRef = useRef<TradeBatchOp[]>([]);
+  const [queue, setQueueState] = useState<TradeBatchOp[]>([]);
+  const [past, setPast] = useState<TradeBatchOp[][]>([]);
+  const [future, setFuture] = useState<TradeBatchOp[][]>([]);
   const flushingRef = useRef(false);
+
+  function commitQueue(next: TradeBatchOp[]) {
+    queueRef.current = next;
+    setQueueState(next);
+  }
 
   // Compute optimistic trade by applying queue to server state.
   const optimisticTrade = useMemo(() => {
@@ -87,21 +93,25 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
 
   const flush = useCallback(async () => {
     if (flushingRef.current) return;
-    if (queue.length === 0) return;
+    const batch = queueRef.current;
+    if (batch.length === 0) return;
     flushingRef.current = true;
-    const batch = queue;
-    setQueue([]);
+    commitQueue([]);
+    // Past snapshots reference queue states that are now empty post-flush;
+    // restoring them would re-enqueue already-flushed ops. Clear the stacks.
+    setPast([]);
+    setFuture([]);
     try {
       await applyTradeBatchAction(batch);
     } catch (e) {
-      // Restore the batch to the front of the queue for retry.
-      setQueue((q) => [...batch, ...q]);
+      // Restore the batch in front of any new ops queued during the flight.
+      commitQueue([...batch, ...queueRef.current]);
       toast.error('Sync failed — will retry on next flush.');
       console.error(e);
     } finally {
       flushingRef.current = false;
     }
-  }, [queue]);
+  }, []);
 
   // Auto-flush every FLUSH_INTERVAL_MS.
   useEffect(() => {
@@ -134,50 +144,37 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
     };
   }, [flush]);
 
-  function recordSnapshot() {
-    // Snapshot the current optimistic trade so undo can restore it. The log we
-    // store is the SERVER log — undo replaces the server, which drops any
-    // unflushed events. Acceptable trade-off for snapshot consistency.
-    setPast((p) => [...p, { trade: optimisticTrade, log: tradeLog }].slice(-50));
+  function enqueue(op: TradeBatchOp) {
+    const prev = queueRef.current;
+    setPast((p) => [...p, prev].slice(-50));
     setFuture([]);
+    commitQueue([...prev, op]);
   }
 
   function enqueueAdd(brainrot_id: number, mutation_id: number | null) {
-    recordSnapshot();
-    setQueue((q) => [...q, { kind: 'add', brainrot_id, mutation_id }]);
+    enqueue({ kind: 'add', brainrot_id, mutation_id });
   }
 
   function enqueueRemove(brainrot_id: number, mutation_id: number | null) {
-    recordSnapshot();
-    setQueue((q) => [...q, { kind: 'remove', brainrot_id, mutation_id }]);
+    enqueue({ kind: 'remove', brainrot_id, mutation_id });
   }
 
-  async function undo() {
+  function undo() {
     if (past.length === 0) return;
     const target = past[past.length - 1];
+    const current = queueRef.current;
     setPast((p) => p.slice(0, -1));
-    setFuture((f) => [{ trade: optimisticTrade, log: tradeLog }, ...f].slice(0, 50));
-    setQueue([]); // discard pending — undo snaps to the snapshot
-    try {
-      await setTradeAndLogAction(target.trade, target.log);
-    } catch (e) {
-      toast.error('Trade undo failed.');
-      console.error(e);
-    }
+    setFuture((f) => [current, ...f].slice(0, 50));
+    commitQueue(target);
   }
 
-  async function redo() {
+  function redo() {
     if (future.length === 0) return;
     const target = future[0];
+    const current = queueRef.current;
     setFuture((f) => f.slice(1));
-    setPast((p) => [...p, { trade: optimisticTrade, log: tradeLog }].slice(-50));
-    setQueue([]);
-    try {
-      await setTradeAndLogAction(target.trade, target.log);
-    } catch (e) {
-      toast.error('Trade redo failed.');
-      console.error(e);
-    }
+    setPast((p) => [...p, current].slice(-50));
+    commitQueue(target);
   }
 
   const canUndo = past.length > 0;

@@ -59,28 +59,33 @@ export function AddBrainrotForm({
     ).length;
   }, [currentEntries, brainrotId, mutationId]);
 
-  async function handleIncrement() {
+  function handleIncrement() {
     if (brainrotId === null) return;
-    setPending(true);
-    try {
-      if (section === 'base') {
-        const formData = new FormData();
-        formData.set('brainrot_id', String(brainrotId));
-        formData.set('mutation_id', mutationId === null ? 'null' : String(mutationId));
-        formData.set('level', '1');
-        const result = await createBrainrotAction(formData);
-        if (result.ok) {
-          onMutatedBase?.(result.previousBase);
-          toast.success('Added to base.');
-        } else if (result.error === 'base_full_too_weak') {
-          toast.error('Base is full — this brainrot is weaker than your weakest.', {
-            description: `${formatNumber(result.newcomerIncome)}/s vs ${formatNumber(result.worstIncome)}/s`,
-          });
-        }
-      } else {
-        if (onEnqueueTradeAdd) {
-          onEnqueueTradeAdd(brainrotId, mutationId);
-          toast.success('Added to trade.');
+
+    // Trade with enqueue callback: synchronous, no pending state, no toast spam.
+    if (section === 'trade' && onEnqueueTradeAdd) {
+      onEnqueueTradeAdd(brainrotId, mutationId);
+      return;
+    }
+
+    // Async path (base, or trade without enqueue).
+    void (async () => {
+      setPending(true);
+      try {
+        if (section === 'base') {
+          const formData = new FormData();
+          formData.set('brainrot_id', String(brainrotId));
+          formData.set('mutation_id', mutationId === null ? 'null' : String(mutationId));
+          formData.set('level', '1');
+          const result = await createBrainrotAction(formData);
+          if (result.ok) {
+            onMutatedBase?.(result.previousBase);
+            toast.success('Added to base.');
+          } else if (result.error === 'base_full_too_weak') {
+            toast.error('Base is full — this brainrot is weaker than your weakest.', {
+              description: `${formatNumber(result.newcomerIncome)}/s vs ${formatNumber(result.worstIncome)}/s`,
+            });
+          }
         } else {
           const result = await addToTradeAction(brainrotId, mutationId);
           if (result.ok) {
@@ -88,26 +93,29 @@ export function AddBrainrotForm({
             toast.success('Added to trade.');
           }
         }
+      } finally {
+        setPending(false);
       }
-    } finally {
-      setPending(false);
-    }
+    })();
   }
 
-  async function handleDecrement() {
+  function handleDecrement() {
     if (brainrotId === null || count === 0) return;
-    setPending(true);
-    try {
-      if (section === 'base') {
-        const result = await removeOneByComboFromBaseAction(brainrotId, mutationId, 1);
-        if (result.ok) {
-          onMutatedBase?.(result.previousBase);
-          toast.success('Removed from base.');
-        }
-      } else {
-        if (onEnqueueTradeRemove) {
-          onEnqueueTradeRemove(brainrotId, mutationId);
-          toast.success('Removed from trade.');
+
+    if (section === 'trade' && onEnqueueTradeRemove) {
+      onEnqueueTradeRemove(brainrotId, mutationId);
+      return;
+    }
+
+    void (async () => {
+      setPending(true);
+      try {
+        if (section === 'base') {
+          const result = await removeOneByComboFromBaseAction(brainrotId, mutationId, 1);
+          if (result.ok) {
+            onMutatedBase?.(result.previousBase);
+            toast.success('Removed from base.');
+          }
         } else {
           const result = await removeOneFromTradeAction(brainrotId, mutationId);
           if (result.ok) {
@@ -115,10 +123,10 @@ export function AddBrainrotForm({
             toast.success('Removed from trade.');
           }
         }
+      } finally {
+        setPending(false);
       }
-    } finally {
-      setPending(false);
-    }
+    })();
   }
 
   return (

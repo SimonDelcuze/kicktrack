@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/shared/utils/format';
 import { MAX_LEVEL, currentMoneyPerSec } from '@/shared/utils/calculations';
@@ -11,23 +10,13 @@ type Props = {
   brainrot: Brainrot;
   mutation: Mutation | null;
   count: number;
-  onIncrement: () => Promise<void> | void;
-  onDecrement: () => Promise<void> | void;
+  onIncrement: () => void;
+  onDecrement: () => void;
 };
 
 export function TradeCard({ brainrot, mutation, count, onIncrement, onDecrement }: Props) {
-  const [pending, setPending] = useState(false);
   const baseIncome = currentMoneyPerSec(brainrot, 1, mutation);
   const maxIncome = currentMoneyPerSec(brainrot, MAX_LEVEL, mutation);
-
-  async function handle(op: () => Promise<void> | void) {
-    setPending(true);
-    try {
-      await op();
-    } finally {
-      setPending(false);
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-left min-h-[160px]">
@@ -64,8 +53,8 @@ export function TradeCard({ brainrot, mutation, count, onIncrement, onDecrement 
       <div className="mt-auto flex items-stretch justify-between gap-2 border-t border-border pt-3">
         <button
           type="button"
-          onClick={() => handle(onDecrement)}
-          disabled={pending || count === 0}
+          onClick={onDecrement}
+          disabled={count === 0}
           aria-label="Remove one"
           className={cn(
             'flex-1 rounded-md border border-border bg-card font-mono text-base font-semibold transition-colors',
@@ -80,13 +69,11 @@ export function TradeCard({ brainrot, mutation, count, onIncrement, onDecrement 
         </span>
         <button
           type="button"
-          onClick={() => handle(onIncrement)}
-          disabled={pending}
+          onClick={onIncrement}
           aria-label="Add one"
           className={cn(
             'flex-1 rounded-md border border-border bg-card font-mono text-base font-semibold transition-colors',
             'hover:border-foreground/40',
-            'disabled:cursor-not-allowed disabled:opacity-40',
           )}
         >
           +
