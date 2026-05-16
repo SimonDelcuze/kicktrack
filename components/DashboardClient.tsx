@@ -1,116 +1,76 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { BrainrotCard } from '@/components/brainrot/BrainrotCard';
-import { AddBrainrotDialog } from '@/components/dialogs/AddBrainrotDialog';
-import { EditBrainrotDialog } from '@/components/dialogs/EditBrainrotDialog';
-import { currentMoneyPerSec } from '@/shared/utils/calculations';
-import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
-
-const MAX_BASE_SIZE = 30;
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { BaseSection } from '@/components/sections/BaseSection';
+import { TradeSection } from '@/components/sections/TradeSection';
+import type { Brainrot, Mutation, TradeLogEvent, UserBrainrot } from '@/shared/types';
 
 type Props = {
   base: UserBrainrot[];
+  trade: UserBrainrot[];
+  tradeLog: TradeLogEvent[];
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
 };
 
-export function DashboardClient({ base, brainrots, mutations }: Props) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
-  const [recentlyAddedIds, setRecentlyAddedIds] = useState<string[]>([]);
+type Section = 'base' | 'trade';
 
-  const editing = editingId ? base.find((b) => b.id === editingId) ?? null : null;
-
-  const enriched = useMemo(() => {
-    return base
-      .map((user) => {
-        const brainrot = brainrots.find((b) => b.id === user.brainrot_id);
-        if (!brainrot) return null;
-        const mutation =
-          user.mutation_id != null
-            ? mutations.find((m) => m.id === user.mutation_id) ?? null
-            : null;
-        return {
-          user,
-          brainrot,
-          mutation,
-          income: currentMoneyPerSec(brainrot, user.level, mutation),
-        };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => b.income - a.income);
-  }, [base, brainrots, mutations]);
-
-  const isFull = base.length >= MAX_BASE_SIZE;
-
-  function handleAddOpenChange(open: boolean) {
-    setAddOpen(open);
-    // Clear recents at the start of a new add session.
-    if (open) setRecentlyAddedIds([]);
-  }
-
-  function handleAdded(id: string) {
-    setRecentlyAddedIds((prev) => [...prev, id]);
-  }
+export function DashboardClient({ base, trade, tradeLog, brainrots, mutations }: Props) {
+  const [section, setSection] = useState<Section>('base');
 
   return (
-    <section>
-      <header className="mb-5 flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold tracking-tight">Your base</h2>
-        <AddBrainrotDialog
+    <div className="space-y-8">
+      <nav
+        role="tablist"
+        aria-label="Sections"
+        className="inline-flex rounded-lg border border-border bg-card p-1"
+      >
+        <TabButton active={section === 'base'} onClick={() => setSection('base')}>
+          Base
+        </TabButton>
+        <TabButton active={section === 'trade'} onClick={() => setSection('trade')}>
+          Trade
+        </TabButton>
+      </nav>
+
+      {section === 'base' ? (
+        <BaseSection base={base} brainrots={brainrots} mutations={mutations} />
+      ) : (
+        <TradeSection
+          trade={trade}
+          tradeLog={tradeLog}
           brainrots={brainrots}
           mutations={mutations}
-          open={addOpen}
-          onOpenChange={handleAddOpenChange}
-          onAdded={handleAdded}
         />
-      </header>
-
-      {base.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {enriched.map((entry, idx) => (
-            <BrainrotCard
-              key={entry.user.id}
-              user={entry.user}
-              brainrot={entry.brainrot}
-              mutation={entry.mutation}
-              position={idx + 1}
-              isRecent={recentlyAddedIds.includes(entry.user.id)}
-              onClick={() => setEditingId(entry.user.id)}
-            />
-          ))}
-        </div>
       )}
-
-      {isFull && (
-        <p className="mt-5 text-xs text-muted-foreground">
-          Base full · adding a stronger brainrot evicts the weakest.
-        </p>
-      )}
-
-      <EditBrainrotDialog
-        open={editing !== null}
-        onOpenChange={(o) => {
-          if (!o) setEditingId(null);
-        }}
-        user={editing}
-        brainrots={brainrots}
-        mutations={mutations}
-      />
-    </section>
+    </div>
   );
 }
 
-function EmptyState() {
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center">
-      <div className="text-sm font-medium text-foreground">No brainrots yet.</div>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Hit Add to drop your first one in.
-      </p>
-    </div>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
+        active
+          ? 'bg-foreground text-background'
+          : 'text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {children}
+    </button>
   );
 }

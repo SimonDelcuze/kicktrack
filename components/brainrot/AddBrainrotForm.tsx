@@ -2,49 +2,44 @@
 
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { Brainrot, Mutation } from '@/shared/types';
-import { createBrainrotAction } from '@/app/add/actions';
+import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
+import {
+  createBrainrotAction,
+  removeOneByComboFromBaseAction,
+} from '@/app/add/actions';
+import {
+  addToTradeAction,
+  removeOneFromTradeAction,
+} from '@/app/trade/actions';
 import { formatNumber } from '@/shared/utils/format';
 import { RAINBOW_MUTATION_ID } from '@/shared/data/mutations';
 import { needsLightText } from '@/shared/utils/contrast';
 
+type Section = 'base' | 'trade';
+
 type Props = {
+  section: Section;
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
-  onAdded?: (id: string) => void;
-  onMutated?: (previousBase: import('@/shared/types').UserBrainrot[]) => void;
+  currentEntries: readonly UserBrainrot[];
+  onMutatedBase?: (previousBase: UserBrainrot[]) => void;
+  onMutatedTrade?: (previousTrade: UserBrainrot[], previousLog: import('@/shared/types').TradeLogEvent[]) => void;
 };
 
-export function AddBrainrotForm({ brainrots, mutations, onAdded, onMutated }: Props) {
+export function AddBrainrotForm({
+  section,
+  brainrots,
+  mutations,
+  currentEntries,
+  onMutatedBase,
+  onMutatedTrade,
+}: Props) {
   const [brainrotId, setBrainrotId] = useState<number | null>(null);
   const [mutationId, setMutationId] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
   const [search, setSearch] = useState('');
-
-  async function handleSubmit(formData: FormData) {
-    setPending(true);
-    try {
-      const result = await createBrainrotAction(formData);
-      if (result.ok) {
-        setBrainrotId(null);
-        setMutationId(null);
-        setSearch('');
-        toast.success('Added to base.');
-        onMutated?.(result.previousBase);
-        onAdded?.(result.entry.id);
-        // Dialog stays open — user can chain more adds.
-      } else if (result.error === 'base_full_too_weak') {
-        toast.error('Base is full — this brainrot is weaker than your weakest.', {
-          description: `${formatNumber(result.newcomerIncome)}/s vs ${formatNumber(result.worstIncome)}/s`,
-        });
-      }
-    } finally {
-      setPending(false);
-    }
-  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -53,12 +48,67 @@ export function AddBrainrotForm({ brainrots, mutations, onAdded, onMutated }: Pr
     return sorted.filter((b) => b.name.toLowerCase().includes(q));
   }, [brainrots, search]);
 
-  return (
-    <form action={handleSubmit} className="space-y-6">
-      <input type="hidden" name="brainrot_id" value={brainrotId ?? ''} />
-      <input type="hidden" name="mutation_id" value={mutationId ?? 'null'} />
-      <input type="hidden" name="level" value="1" />
+  const count = useMemo(() => {
+    if (brainrotId === null) return 0;
+    return currentEntries.filter(
+      (e) => e.brainrot_id === brainrotId && e.mutation_id === mutationId && e.level === 1,
+    ).length;
+  }, [currentEntries, brainrotId, mutationId]);
 
+  async function handleIncrement() {
+    if (brainrotId === null) return;
+    setPending(true);
+    try {
+      if (section === 'base') {
+        const formData = new FormData();
+        formData.set('brainrot_id', String(brainrotId));
+        formData.set('mutation_id', mutationId === null ? 'null' : String(mutationId));
+        formData.set('level', '1');
+        const result = await createBrainrotAction(formData);
+        if (result.ok) {
+          onMutatedBase?.(result.previousBase);
+          toast.success('Added to base.');
+        } else if (result.error === 'base_full_too_weak') {
+          toast.error('Base is full — this brainrot is weaker than your weakest.', {
+            description: `${formatNumber(result.newcomerIncome)}/s vs ${formatNumber(result.worstIncome)}/s`,
+          });
+        }
+      } else {
+        const result = await addToTradeAction(brainrotId, mutationId);
+        if (result.ok) {
+          onMutatedTrade?.(result.previousTrade, result.previousLog);
+          toast.success('Added to trade.');
+        }
+      }
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handleDecrement() {
+    if (brainrotId === null || count === 0) return;
+    setPending(true);
+    try {
+      if (section === 'base') {
+        const result = await removeOneByComboFromBaseAction(brainrotId, mutationId, 1);
+        if (result.ok) {
+          onMutatedBase?.(result.previousBase);
+          toast.success('Removed from base.');
+        }
+      } else {
+        const result = await removeOneFromTradeAction(brainrotId, mutationId);
+        if (result.ok) {
+          onMutatedTrade?.(result.previousTrade, result.previousLog);
+          toast.success('Removed from trade.');
+        }
+      }
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
       <Input
         type="search"
         placeholder="Search brainrots…"
@@ -69,7 +119,7 @@ export function AddBrainrotForm({ brainrots, mutations, onAdded, onMutated }: Pr
 
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center text-sm text-muted-foreground">
-          No brainrot matches “{search}”.
+          No brainrot matches &ldquo;{search}&rdquo;.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -100,15 +150,42 @@ export function AddBrainrotForm({ brainrots, mutations, onAdded, onMutated }: Pr
         </div>
       )}
 
-      {/* Mutation cards (matching brainrot card style) */}
       <MutationGrid mutations={mutations} selectedId={mutationId} onSelect={setMutationId} />
 
       <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
-        <Button type="submit" disabled={brainrotId === null || pending}>
-          {pending ? 'Adding…' : 'Add'}
-        </Button>
+        <div className="flex items-stretch gap-2">
+          <button
+            type="button"
+            onClick={handleDecrement}
+            disabled={brainrotId === null || pending || count === 0}
+            aria-label="Remove one"
+            className={cn(
+              'h-11 w-14 rounded-md border border-border bg-card font-mono text-lg font-semibold',
+              'hover:border-foreground/40',
+              'disabled:cursor-not-allowed disabled:opacity-40',
+            )}
+          >
+            −
+          </button>
+          <span className="flex h-11 min-w-[3rem] items-center justify-center font-mono text-lg font-semibold tabular-nums">
+            {count}
+          </span>
+          <button
+            type="button"
+            onClick={handleIncrement}
+            disabled={brainrotId === null || pending}
+            aria-label="Add one"
+            className={cn(
+              'h-11 w-14 rounded-md border border-foreground bg-foreground font-mono text-lg font-semibold text-background',
+              'hover:opacity-90',
+              'disabled:cursor-not-allowed disabled:opacity-40',
+            )}
+          >
+            +
+          </button>
+        </div>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -121,7 +198,6 @@ type MutationGridProps = {
 export function MutationGrid({ mutations, selectedId, onSelect }: MutationGridProps) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {/* None card */}
       <MutationCardButton
         label="None"
         multiplier="×1"
@@ -165,15 +241,10 @@ function MutationCardButton({
 
   const baseClass =
     'flex flex-col items-start justify-between gap-2 rounded-xl border p-3 text-left transition-all min-h-[88px]';
-
   const stateClass = selected
     ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background'
     : 'hover:scale-[1.01]';
 
-  // Variants:
-  // - none: white card, dark text
-  // - colored: colored bg, white/dark text based on contrast
-  // - rainbow: gradient bg, dark text
   let variantClass: string;
   let style: React.CSSProperties | undefined;
   if (isRainbow) {
