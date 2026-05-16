@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { BaseSection } from '@/components/sections/BaseSection';
 import { TradeSection } from '@/components/sections/TradeSection';
+import { ExportDialog } from '@/components/dialogs/ExportDialog';
 import type { Brainrot, Mutation, TradeLogEvent, UserBrainrot } from '@/shared/types';
 
 type Props = {
@@ -21,18 +22,26 @@ export function DashboardClient({ base, trade, tradeLog, brainrots, mutations }:
 
   return (
     <div className="space-y-8">
-      <nav
-        role="tablist"
-        aria-label="Sections"
-        className="inline-flex rounded-lg border border-border bg-card p-1"
-      >
-        <TabButton active={section === 'base'} onClick={() => setSection('base')}>
-          Base
-        </TabButton>
-        <TabButton active={section === 'trade'} onClick={() => setSection('trade')}>
-          Trade
-        </TabButton>
-      </nav>
+      <div className="flex items-center justify-between gap-3">
+        <nav
+          role="tablist"
+          aria-label="Sections"
+          className="inline-flex rounded-lg border border-border bg-card p-1"
+        >
+          <TabButton active={section === 'base'} onClick={() => setSection('base')}>
+            Base
+          </TabButton>
+          <TabButton active={section === 'trade'} onClick={() => setSection('trade')}>
+            Trade
+          </TabButton>
+        </nav>
+        <ExportDialog
+          base={base}
+          trade={trade}
+          brainrots={brainrots}
+          mutations={mutations}
+        />
+      </div>
 
       {section === 'base' ? (
         <BaseSection base={base} brainrots={brainrots} mutations={mutations} />
