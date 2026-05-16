@@ -19,3 +19,12 @@
 - `formatNumber` étendu (Qa/Qi/Sx/Sp/Oc/No/Dc) pour anticiper les grands ordres de grandeur.
 - `level_growth_factor` = **1.25** (calibré depuis un Guerriro Digitale bacon : 14.7M au lvl 1 → 218.1T au lvl 75, soit base × 1.25^74 × 30).
 - Convention conservée : level 1 = base, level 75 = base × factor^74.
+
+## 2026-05-16 — Simon (Trade section)
+- Ajout d'une section Trade en parallèle de Base, avec switcher de tabs sur la même page.
+- Trade : pas de cap, level implicite 1, cartes groupées par `(brainrot, mutation)` avec compteur ± inline.
+- Le dialog d'ajout devient section-aware : footer `[− N +]` (remplace le bouton Add). Marche identique pour Base et Trade.
+- Journal de transactions persisté en KV (`kicktrack:trade:log`), affiché chat-style en bas du tab Trade, merging visuel par fenêtres de 5min, couleurs `+` vert / `−` rouge.
+- Undo/redo Trade séparé (flèches dans la toolbar du tab Trade) ; Ctrl+Z reste dédié à Base.
+- Spec : `docs/superpowers/specs/2026-05-16-trade-section-design.md`. Plan : `docs/superpowers/plans/2026-05-16-trade-section.md`.
+- Build + test + lint = OK (54 tests verts).
