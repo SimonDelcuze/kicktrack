@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { addBrainrot, getBase, type AddResult } from '@/server/services/base';
+import { addBrainrot, getBase, removeOneByComboFromBase, type AddResult } from '@/server/services/base';
 import { userBrainrotInputSchema } from '@/shared/schemas/user-brainrot';
 import type { UserBrainrot } from '@/shared/types';
 
@@ -23,4 +23,15 @@ export async function createBrainrotAction(formData: FormData): Promise<CreateAc
     revalidatePath('/');
   }
   return { ...result, previousBase };
+}
+
+export async function removeOneByComboFromBaseAction(
+  brainrot_id: number,
+  mutation_id: number | null,
+  level: number,
+): Promise<{ ok: boolean; previousBase: UserBrainrot[] }> {
+  const previousBase = await getBase();
+  const removed = await removeOneByComboFromBase(brainrot_id, mutation_id, level);
+  if (removed) revalidatePath('/');
+  return { ok: removed !== null, previousBase };
 }
