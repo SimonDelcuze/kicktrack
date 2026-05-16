@@ -17,6 +17,8 @@ export const mutations: readonly Mutation[] = [
   { id: 12, name: 'alien',        multiplier: 22,  color_hex: '#d946ef', tier_order: 12 }, // rose / fuchsia
   { id: 10, name: 'rainbow',      multiplier: 30,  color_hex: '#ec4899', tier_order: 13 }, // arc-en-ciel — UI applies a gradient.
   { id: 13, name: 'bacon',        multiplier: 30,  color_hex: '#f59e0b', tier_order: 14 }, // orange ambré
+  { id: 15, name: 'astral',       multiplier: 35,  color_hex: '#7c3aed', tier_order: 15 }, // violet
+  { id: 16, name: 'phantom',      multiplier: 35,  color_hex: '#bbf7d0', tier_order: 16 }, // vert très clair
 ] as const;
 
 export const mutationById = (id: number) => mutations.find((m) => m.id === id);
