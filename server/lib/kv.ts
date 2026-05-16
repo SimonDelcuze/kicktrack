@@ -7,3 +7,5 @@ export const redis = new Redis({
 });
 
 export const BASE_KEY = 'kicktrack:base';
+export const TRADE_KEY = 'kicktrack:trade';
+export const TRADE_LOG_KEY = 'kicktrack:trade:log';

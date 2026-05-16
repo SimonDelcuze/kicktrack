@@ -31,3 +31,11 @@ export type UserBrainrot = {
   created_at: string;
   updated_at: string;
 };
+
+export type TradeLogEvent = {
+  id: string;
+  ts: string; // ISO timestamp
+  op: '+' | '-';
+  brainrot_id: number;
+  mutation_id: number | null;
+};

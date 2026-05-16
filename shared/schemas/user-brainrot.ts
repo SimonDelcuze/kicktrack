@@ -16,3 +16,15 @@ export const userBrainrotSchema = userBrainrotInputSchema.extend({
 export const userBrainrotArraySchema = z.array(userBrainrotSchema);
 
 export type UserBrainrotInput = z.infer<typeof userBrainrotInputSchema>;
+
+export const tradeLogEventSchema = z.object({
+  id: z.string().uuid(),
+  ts: z.string().datetime(),
+  op: z.enum(['+', '-']),
+  brainrot_id: z.number().int().positive(),
+  mutation_id: z.number().int().positive().nullable(),
+});
+
+export const tradeLogArraySchema = z.array(tradeLogEventSchema);
+
+export type TradeLogEventInput = z.infer<typeof tradeLogEventSchema>;
