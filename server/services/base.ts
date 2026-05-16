@@ -117,3 +117,22 @@ export async function replaceBase(incoming: UserBrainrot[]): Promise<void> {
   }
   await redis.set(BASE_KEY, validated);
 }
+
+export async function removeOneByComboFromBase(
+  brainrot_id: number,
+  mutation_id: number | null,
+  level: number,
+): Promise<{ removedId: string } | null> {
+  const base = await getBase();
+  const sortedDesc = [...base].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const target = sortedDesc.find(
+    (e) =>
+      e.brainrot_id === brainrot_id &&
+      e.mutation_id === mutation_id &&
+      e.level === level,
+  );
+  if (!target) return null;
+  const next = base.filter((e) => e.id !== target.id);
+  await redis.set(BASE_KEY, next);
+  return { removedId: target.id };
+}
