@@ -42,14 +42,22 @@ export function TradeCard({ brainrot, mutation, count, onIncrement, onDecrement 
 
       {mutation && <MutationChip mutation={mutation} variant="chip" />}
 
-      <div className="font-mono text-xs tabular-nums text-muted-foreground">
-        <div className="flex justify-between">
-          <span>Base</span>
-          <span>{formatNumber(baseIncome)}</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            Max
+          </span>
+          <span className="font-mono text-3xl font-bold tabular-nums text-foreground">
+            {formatNumber(maxIncome)}
+          </span>
         </div>
-        <div className="flex justify-between">
-          <span>Max</span>
-          <span>{formatNumber(maxIncome)}</span>
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            Base
+          </span>
+          <span className="font-mono text-lg font-semibold tabular-nums text-muted-foreground">
+            {formatNumber(baseIncome)}
+          </span>
         </div>
       </div>
 
