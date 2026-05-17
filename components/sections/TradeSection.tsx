@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { AddBrainrotDialog } from '@/components/dialogs/AddBrainrotDialog';
+import { BulkRemoveDialog } from '@/components/dialogs/BulkRemoveDialog';
 import { TradeCard } from '@/components/brainrot/TradeCard';
 import { TradeHistoryLog } from '@/components/trade/TradeHistoryLog';
 import {
@@ -222,6 +223,12 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
             >
               →
             </button>
+            <BulkRemoveDialog
+              trade={optimisticTrade}
+              brainrots={brainrots}
+              mutations={mutations}
+              onEnqueueRemove={enqueueRemove}
+            />
             <AddBrainrotDialog
               section="trade"
               brainrots={brainrots}
