@@ -28,6 +28,9 @@ type Props = {
   onMutatedTrade?: (previousTrade: UserBrainrot[], previousLog: import('@/shared/types').TradeLogEvent[]) => void;
   onEnqueueTradeAdd?: (brainrot_id: number, mutation_id: number | null) => void;
   onEnqueueTradeRemove?: (brainrot_id: number, mutation_id: number | null) => void;
+  // Fires once per successful base-side create so the parent can mark the new
+  // card as "recently added" (black outline highlight on the dashboard).
+  onAddedToBase?: (id: string) => void;
 };
 
 export function AddBrainrotForm({
@@ -39,6 +42,7 @@ export function AddBrainrotForm({
   onMutatedTrade,
   onEnqueueTradeAdd,
   onEnqueueTradeRemove,
+  onAddedToBase,
 }: Props) {
   const [brainrotId, setBrainrotId] = useState<number | null>(null);
   const [mutationId, setMutationId] = useState<number | null>(null);
@@ -119,6 +123,7 @@ export function AddBrainrotForm({
             const result = await createBrainrotAction(formData);
             if (result.ok) {
               onMutatedBase?.(result.previousBase);
+              onAddedToBase?.(result.entry.id);
               applied++;
             } else if (result.error === 'base_full_too_weak') {
               stoppedReason = `Base full at +${applied} — newcomer ${formatNumber(

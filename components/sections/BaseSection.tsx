@@ -68,6 +68,7 @@ export function BaseSection({ base, brainrots, mutations }: Props) {
             open={addOpen}
             onOpenChange={handleAddOpenChange}
             onMutatedBase={recordMutation}
+            onAddedToBase={(id) => setRecentlyAddedIds((prev) => [...prev, id])}
           />
         </header>
 
