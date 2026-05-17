@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MutationChip } from '@/components/brainrot/MutationChip';
 import { cn } from '@/lib/utils';
-import { MAX_LEVEL, currentMoneyPerSec } from '@/shared/utils/calculations';
+import { MAX_LEVEL, currentMoneyPerSec, compareMutationTier } from '@/shared/utils/calculations';
 import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 
 type Props = {
@@ -61,7 +61,9 @@ export function BulkRemoveDialog({
         });
       }
     }
-    return Array.from(map.values()).sort((a, b) => b.income - a.income);
+    return Array.from(map.values()).sort(
+      (a, b) => b.income - a.income || compareMutationTier(a.mutation, b.mutation),
+    );
   }, [trade, brainrots, mutations]);
 
   function handleOpen(next: boolean) {

@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MAX_LEVEL, currentMoneyPerSec } from '@/shared/utils/calculations';
+import { MAX_LEVEL, currentMoneyPerSec, compareMutationTier } from '@/shared/utils/calculations';
 import { formatNumber } from '@/shared/utils/format';
 import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 
@@ -63,7 +63,7 @@ function buildExportText(
   if (map.size === 0) return '```\n(empty)\n```';
 
   const rows = Array.from(map.values())
-    .sort((a, b) => b.income - a.income)
+    .sort((a, b) => b.income - a.income || compareMutationTier(a.mutation, b.mutation))
     .map((g) => {
       const mutLabel = g.mutation ? `${formatMutationName(g.mutation)} ` : '';
       const left = `${g.count}x ${mutLabel}${g.brainrot.name}`;

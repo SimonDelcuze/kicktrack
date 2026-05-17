@@ -43,3 +43,19 @@ export function maxPotential(
 ): number {
   return currentMoneyPerSec(brainrot, MAX_LEVEL, bestMutation);
 }
+
+/**
+ * Tie-breaker for two mutations: returns a value usable in Array.sort.
+ * Lower tier_order wins (e.g. rainbow tier=13 precedes bacon tier=14 when both
+ * are ×30). A null mutation sorts last. Use chained after a primary income
+ * comparator: `(b.income - a.income) || compareMutationTier(a.mutation, b.mutation)`.
+ */
+export function compareMutationTier(
+  a: Mutation | null,
+  b: Mutation | null,
+): number {
+  return (
+    (a?.tier_order ?? Number.MAX_SAFE_INTEGER) -
+    (b?.tier_order ?? Number.MAX_SAFE_INTEGER)
+  );
+}

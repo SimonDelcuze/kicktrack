@@ -5,7 +5,7 @@ import { BrainrotCard } from '@/components/brainrot/BrainrotCard';
 import { AddBrainrotDialog } from '@/components/dialogs/AddBrainrotDialog';
 import { EditBrainrotDialog } from '@/components/dialogs/EditBrainrotDialog';
 import { StatsHeader } from '@/components/stats/StatsHeader';
-import { currentMoneyPerSec, totalIncome } from '@/shared/utils/calculations';
+import { currentMoneyPerSec, totalIncome, compareMutationTier } from '@/shared/utils/calculations';
 import { useHistory } from '@/components/HistoryProvider';
 import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 
@@ -43,7 +43,9 @@ export function BaseSection({ base, brainrots, mutations }: Props) {
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => b.income - a.income);
+      .sort(
+        (a, b) => b.income - a.income || compareMutationTier(a.mutation, b.mutation),
+      );
   }, [base, brainrots, mutations]);
 
   const isFull = base.length >= MAX_BASE_SIZE;

@@ -10,7 +10,7 @@ import {
   applyTradeBatchAction,
   type TradeBatchOp,
 } from '@/app/trade/actions';
-import { MAX_LEVEL, currentMoneyPerSec } from '@/shared/utils/calculations';
+import { MAX_LEVEL, currentMoneyPerSec, compareMutationTier } from '@/shared/utils/calculations';
 import { cn } from '@/lib/utils';
 import type { Brainrot, Mutation, TradeLogEvent, UserBrainrot } from '@/shared/types';
 
@@ -88,7 +88,8 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
     return Array.from(map.values()).sort(
       (a, b) =>
         currentMoneyPerSec(b.brainrot, MAX_LEVEL, b.mutation) -
-        currentMoneyPerSec(a.brainrot, MAX_LEVEL, a.mutation),
+          currentMoneyPerSec(a.brainrot, MAX_LEVEL, a.mutation) ||
+        compareMutationTier(a.mutation, b.mutation),
     );
   }, [optimisticTrade, brainrots, mutations]);
 
