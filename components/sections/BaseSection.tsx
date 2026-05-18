@@ -12,12 +12,13 @@ import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 const MAX_BASE_SIZE = 30;
 
 type Props = {
+  slug: string;
   base: UserBrainrot[];
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
 };
 
-export function BaseSection({ base, brainrots, mutations }: Props) {
+export function BaseSection({ slug, base, brainrots, mutations }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [recentlyAddedIds, setRecentlyAddedIds] = useState<string[]>([]);
@@ -63,6 +64,7 @@ export function BaseSection({ base, brainrots, mutations }: Props) {
         <header className="mb-5 flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold tracking-tight">Your base</h2>
           <AddBrainrotDialog
+            slug={slug}
             section="base"
             brainrots={brainrots}
             mutations={mutations}
@@ -99,6 +101,7 @@ export function BaseSection({ base, brainrots, mutations }: Props) {
         )}
 
         <EditBrainrotDialog
+          slug={slug}
           open={editing !== null}
           onOpenChange={(o) => {
             if (!o) setEditingId(null);

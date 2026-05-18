@@ -7,7 +7,7 @@ import type { UserBrainrot } from '@/shared/types';
 
 export type CreateActionResult = AddResult & { previousBase: UserBrainrot[] };
 
-export async function createBrainrotAction(formData: FormData): Promise<CreateActionResult> {
+export async function createBrainrotAction(slug: string, formData: FormData): Promise<CreateActionResult> {
   const input = userBrainrotInputSchema.parse({
     brainrot_id: Number(formData.get('brainrot_id')),
     mutation_id:
@@ -17,21 +17,22 @@ export async function createBrainrotAction(formData: FormData): Promise<CreateAc
     level: Number(formData.get('level')),
     nickname: (formData.get('nickname') as string | null) || undefined,
   });
-  const previousBase: UserBrainrot[] = await getBase();
-  const result = await addBrainrot(input);
+  const previousBase: UserBrainrot[] = await getBase(slug);
+  const result = await addBrainrot(slug, input);
   if (result.ok) {
-    revalidatePath('/');
+    revalidatePath('/u/' + slug);
   }
   return { ...result, previousBase };
 }
 
 export async function removeOneByComboFromBaseAction(
+  slug: string,
   brainrot_id: number,
   mutation_id: number | null,
   level: number,
 ): Promise<{ ok: boolean; previousBase: UserBrainrot[] }> {
-  const previousBase = await getBase();
-  const removed = await removeOneByComboFromBase(brainrot_id, mutation_id, level);
-  if (removed) revalidatePath('/');
+  const previousBase = await getBase(slug);
+  const removed = await removeOneByComboFromBase(slug, brainrot_id, mutation_id, level);
+  if (removed) revalidatePath('/u/' + slug);
   return { ok: removed !== null, previousBase };
 }

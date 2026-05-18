@@ -6,6 +6,7 @@ import { userBrainrotInputSchema } from '@/shared/schemas/user-brainrot';
 import type { UserBrainrot } from '@/shared/types';
 
 export async function updateBrainrotAction(
+  slug: string,
   id: string,
   formData: FormData,
 ): Promise<{ updated: UserBrainrot | null; previousBase: UserBrainrot[] }> {
@@ -18,17 +19,18 @@ export async function updateBrainrotAction(
     level: Number(formData.get('level')),
     nickname: (formData.get('nickname') as string | null) || undefined,
   });
-  const previousBase = await getBase();
-  const updated = await updateBrainrot(id, input);
-  revalidatePath('/');
+  const previousBase = await getBase(slug);
+  const updated = await updateBrainrot(slug, id, input);
+  revalidatePath('/u/' + slug);
   return { updated, previousBase };
 }
 
 export async function deleteBrainrotAction(
+  slug: string,
   id: string,
 ): Promise<{ deleted: boolean; previousBase: UserBrainrot[] }> {
-  const previousBase = await getBase();
-  const deleted = await deleteBrainrot(id);
-  revalidatePath('/');
+  const previousBase = await getBase(slug);
+  const deleted = await deleteBrainrot(slug, id);
+  revalidatePath('/u/' + slug);
   return { deleted, previousBase };
 }

@@ -11,6 +11,7 @@ import { useHistory } from '@/components/HistoryProvider';
 import type { Brainrot, Mutation, UserBrainrot } from '@/shared/types';
 
 type Props = {
+  slug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: UserBrainrot | null;
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export function EditBrainrotDialog({
+  slug,
   open,
   onOpenChange,
   user,
@@ -38,6 +40,7 @@ export function EditBrainrotDialog({
         {user && (
           <EditBrainrotForm
             key={formKey}
+            slug={slug}
             user={user}
             brainrots={brainrots}
             mutations={mutations}

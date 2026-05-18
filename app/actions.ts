@@ -9,10 +9,11 @@ import type { UserBrainrot } from '@/shared/types';
  * Returns the previous base so the caller can stash it on the redo/past stack.
  */
 export async function setBaseAction(
+  slug: string,
   next: UserBrainrot[],
 ): Promise<{ previousBase: UserBrainrot[] }> {
-  const previousBase = await getBase();
-  await replaceBase(next);
-  revalidatePath('/');
+  const previousBase = await getBase(slug);
+  await replaceBase(slug, next);
+  revalidatePath('/u/' + slug);
   return { previousBase };
 }

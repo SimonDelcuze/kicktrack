@@ -1,6 +1,6 @@
 import 'server-only';
 import { v4 as uuidv4 } from 'uuid';
-import { redis, BASE_KEY } from '@/server/lib/kv';
+import { redis, baseKey, SIMON_SLUG, LEGACY_BASE_KEY } from '@/server/lib/kv';
 import {
   userBrainrotInputSchema,
   userBrainrotArraySchema,
@@ -25,12 +25,21 @@ function incomeOf(ub: UserBrainrot): number {
   return currentMoneyPerSec(brainrot, ub.level, mutation);
 }
 
-export async function getBase(): Promise<UserBrainrot[]> {
-  const raw = await redis.get<UserBrainrot[]>(BASE_KEY);
-  return raw ?? [];
+export async function getBase(slug: string): Promise<UserBrainrot[]> {
+  const raw = await redis.get<UserBrainrot[]>(baseKey(slug));
+  if (raw !== null) return raw;
+  if (slug === SIMON_SLUG) {
+    const legacy = await redis.get<UserBrainrot[]>(LEGACY_BASE_KEY);
+    if (legacy !== null) {
+      await redis.set(baseKey(slug), legacy);
+      await redis.del(LEGACY_BASE_KEY);
+      return legacy;
+    }
+  }
+  return [];
 }
 
-export async function addBrainrot(input: UserBrainrotInput): Promise<AddResult> {
+export async function addBrainrot(slug: string, input: UserBrainrotInput): Promise<AddResult> {
   const validated = userBrainrotInputSchema.parse(input);
 
   const brainrot = brainrots.find((b) => b.id === validated.brainrot_id);
@@ -43,7 +52,7 @@ export async function addBrainrot(input: UserBrainrotInput): Promise<AddResult> 
       : null;
 
   const newcomerIncome = currentMoneyPerSec(brainrot, validated.level, mutation);
-  const base = await getBase();
+  const base = await getBase(slug);
 
   let nextBase = base;
   let evictedId: string | undefined;
@@ -73,15 +82,16 @@ export async function addBrainrot(input: UserBrainrotInput): Promise<AddResult> 
     updated_at: now,
   };
 
-  await redis.set(BASE_KEY, [...nextBase, entry]);
+  await redis.set(baseKey(slug), [...nextBase, entry]);
   return { ok: true, entry, evictedId };
 }
 
 export async function updateBrainrot(
+  slug: string,
   id: string,
   patch: Partial<UserBrainrotInput>,
 ): Promise<UserBrainrot | null> {
-  const base = await getBase();
+  const base = await getBase(slug);
   const idx = base.findIndex((b) => b.id === id);
   if (idx === -1) return null;
   const merged = { ...base[idx], ...patch };
@@ -98,32 +108,33 @@ export async function updateBrainrot(
   };
   const next = [...base];
   next[idx] = updated;
-  await redis.set(BASE_KEY, next);
+  await redis.set(baseKey(slug), next);
   return updated;
 }
 
-export async function deleteBrainrot(id: string): Promise<boolean> {
-  const base = await getBase();
+export async function deleteBrainrot(slug: string, id: string): Promise<boolean> {
+  const base = await getBase(slug);
   const next = base.filter((b) => b.id !== id);
   if (next.length === base.length) return false;
-  await redis.set(BASE_KEY, next);
+  await redis.set(baseKey(slug), next);
   return true;
 }
 
-export async function replaceBase(incoming: UserBrainrot[]): Promise<void> {
+export async function replaceBase(slug: string, incoming: UserBrainrot[]): Promise<void> {
   const validated = userBrainrotArraySchema.parse(incoming);
   if (validated.length > MAX_BASE_SIZE) {
     throw new Error(`Cannot replace base with more than ${MAX_BASE_SIZE} entries`);
   }
-  await redis.set(BASE_KEY, validated);
+  await redis.set(baseKey(slug), validated);
 }
 
 export async function removeOneByComboFromBase(
+  slug: string,
   brainrot_id: number,
   mutation_id: number | null,
   level: number,
 ): Promise<{ removedId: string } | null> {
-  const base = await getBase();
+  const base = await getBase(slug);
   const sortedDesc = [...base].sort((a, b) => b.created_at.localeCompare(a.created_at));
   const target = sortedDesc.find(
     (e) =>
@@ -133,6 +144,6 @@ export async function removeOneByComboFromBase(
   );
   if (!target) return null;
   const next = base.filter((e) => e.id !== target.id);
-  await redis.set(BASE_KEY, next);
+  await redis.set(baseKey(slug), next);
   return { removedId: target.id };
 }

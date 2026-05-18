@@ -12,6 +12,7 @@ import { currentMoneyPerSec } from '@/shared/utils/calculations';
 import { MutationGrid } from '@/components/brainrot/AddBrainrotForm';
 
 type Props = {
+  slug: string;
   user: UserBrainrot;
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function EditBrainrotForm({
+  slug,
   user,
   brainrots,
   mutations,
@@ -41,7 +43,7 @@ export function EditBrainrotForm({
   async function handleUpdate(formData: FormData) {
     setPending(true);
     try {
-      const r = await updateBrainrotAction(user.id, formData);
+      const r = await updateBrainrotAction(slug, user.id, formData);
       onMutated?.(r.previousBase);
       toast.success('Saved.');
       onComplete?.();
@@ -53,7 +55,7 @@ export function EditBrainrotForm({
   async function handleDelete() {
     setPending(true);
     try {
-      const r = await deleteBrainrotAction(user.id);
+      const r = await deleteBrainrotAction(slug, user.id);
       onMutated?.(r.previousBase);
       toast.success('Removed.');
       onComplete?.();
@@ -87,7 +89,7 @@ export function EditBrainrotForm({
       {/* Brainrot grid */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center text-sm text-muted-foreground">
-          No brainrot matches “{search}”.
+          No brainrot matches &ldquo;{search}&rdquo;.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

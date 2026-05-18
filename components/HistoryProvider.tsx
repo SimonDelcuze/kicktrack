@@ -24,7 +24,7 @@ type HistoryContextValue = {
 
 const HistoryContext = createContext<HistoryContextValue | null>(null);
 
-export function HistoryProvider({ children }: { children: ReactNode }) {
+export function HistoryProvider({ slug, children }: { slug: string; children: ReactNode }) {
   const [past, setPast] = useState<UserBrainrot[][]>([]);
   const [future, setFuture] = useState<UserBrainrot[][]>([]);
 
@@ -38,7 +38,7 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
     const target = past[past.length - 1];
     setPast((p) => p.slice(0, -1));
     try {
-      const { previousBase } = await setBaseAction(target);
+      const { previousBase } = await setBaseAction(slug, target);
       setFuture((f) => [previousBase, ...f].slice(0, MAX_HISTORY));
     } catch (e) {
       // Rollback the past pop on failure.
@@ -46,21 +46,21 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
       toast.error('Undo failed.');
       console.error(e);
     }
-  }, [past]);
+  }, [past, slug]);
 
   const redo = useCallback(async () => {
     if (future.length === 0) return;
     const target = future[0];
     setFuture((f) => f.slice(1));
     try {
-      const { previousBase } = await setBaseAction(target);
+      const { previousBase } = await setBaseAction(slug, target);
       setPast((p) => [...p, previousBase].slice(-MAX_HISTORY));
     } catch (e) {
       setFuture((f) => [target, ...f]);
       toast.error('Redo failed.');
       console.error(e);
     }
-  }, [future]);
+  }, [future, slug]);
 
   // Global keyboard shortcuts: Ctrl/Cmd+Z (undo), Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y (redo).
   // Skip when user is typing in an input/textarea so native browser undo still works there.
@@ -97,6 +97,10 @@ export function HistoryProvider({ children }: { children: ReactNode }) {
   };
 
   return <HistoryContext.Provider value={value}>{children}</HistoryContext.Provider>;
+}
+
+export function useOptionalHistory(): HistoryContextValue | null {
+  return useContext(HistoryContext);
 }
 
 export function useHistory(): HistoryContextValue {

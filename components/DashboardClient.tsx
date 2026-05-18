@@ -8,6 +8,7 @@ import { ExportDialog } from '@/components/dialogs/ExportDialog';
 import type { Brainrot, Mutation, TradeLogEvent, UserBrainrot } from '@/shared/types';
 
 type Props = {
+  slug: string;
   base: UserBrainrot[];
   trade: UserBrainrot[];
   tradeLog: TradeLogEvent[];
@@ -17,7 +18,7 @@ type Props = {
 
 type Section = 'base' | 'trade';
 
-export function DashboardClient({ base, trade, tradeLog, brainrots, mutations }: Props) {
+export function DashboardClient({ slug, base, trade, tradeLog, brainrots, mutations }: Props) {
   const [section, setSection] = useState<Section>('base');
 
   return (
@@ -39,9 +40,10 @@ export function DashboardClient({ base, trade, tradeLog, brainrots, mutations }:
       </div>
 
       {section === 'base' ? (
-        <BaseSection base={base} brainrots={brainrots} mutations={mutations} />
+        <BaseSection slug={slug} base={base} brainrots={brainrots} mutations={mutations} />
       ) : (
         <TradeSection
+          slug={slug}
           trade={trade}
           tradeLog={tradeLog}
           brainrots={brainrots}

@@ -5,6 +5,7 @@ const { mockRedis } = vi.hoisted(() => ({
   mockRedis: {
     get: vi.fn(),
     set: vi.fn(),
+    del: vi.fn(),
   },
 }));
 
@@ -13,7 +14,13 @@ vi.mock('server-only', () => ({}));
 
 vi.mock('@/server/lib/kv', () => ({
   redis: mockRedis,
-  BASE_KEY: 'kicktrack:base',
+  SIMON_SLUG: 'simontest',
+  baseKey: (slug: string) => `kicktrack:${slug}:base`,
+  tradeKey: (slug: string) => `kicktrack:${slug}:trade`,
+  tradeLogKey: (slug: string) => `kicktrack:${slug}:trade:log`,
+  LEGACY_BASE_KEY: 'kicktrack:base',
+  LEGACY_TRADE_KEY: 'kicktrack:trade',
+  LEGACY_TRADE_LOG_KEY: 'kicktrack:trade:log',
 }));
 
 import {
@@ -24,6 +31,9 @@ import {
   replaceBase,
 } from '@/server/services/base';
 
+const TEST_SLUG = 'test';
+const SIMON_SLUG = 'simontest';
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -31,7 +41,7 @@ beforeEach(() => {
 describe('getBase', () => {
   it('returns empty array when KV has no entry', async () => {
     mockRedis.get.mockResolvedValueOnce(null);
-    expect(await getBase()).toEqual([]);
+    expect(await getBase(TEST_SLUG)).toEqual([]);
   });
 
   it('returns parsed array when KV has data', async () => {
@@ -39,7 +49,49 @@ describe('getBase', () => {
       { id: 'a', brainrot_id: 1, mutation_id: null, level: 5, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z' },
     ];
     mockRedis.get.mockResolvedValueOnce(sample);
-    expect(await getBase()).toEqual(sample);
+    expect(await getBase(TEST_SLUG)).toEqual(sample);
+  });
+
+  it('migration: when slug===SIMON_SLUG and slug-key is empty but legacy exists, migrates data', async () => {
+    const legacy = [
+      { id: 'a', brainrot_id: 1, mutation_id: null, level: 5, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z' },
+    ];
+    // First call: slug-key returns null; second call: legacy key returns data
+    mockRedis.get.mockResolvedValueOnce(null).mockResolvedValueOnce(legacy);
+    mockRedis.set.mockResolvedValueOnce('OK');
+    mockRedis.del.mockResolvedValueOnce(1);
+
+    const result = await getBase(SIMON_SLUG);
+    expect(result).toEqual(legacy);
+    expect(mockRedis.set).toHaveBeenCalledWith(`kicktrack:${SIMON_SLUG}:base`, legacy);
+    expect(mockRedis.del).toHaveBeenCalledWith('kicktrack:base');
+  });
+
+  it('migration: when slug===SIMON_SLUG and slug-key is empty and legacy is also empty, returns []', async () => {
+    mockRedis.get.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    const result = await getBase(SIMON_SLUG);
+    expect(result).toEqual([]);
+    expect(mockRedis.set).not.toHaveBeenCalled();
+    expect(mockRedis.del).not.toHaveBeenCalled();
+  });
+
+  it('migration: when slug!==SIMON_SLUG and slug-key is empty, returns [] without checking legacy', async () => {
+    mockRedis.get.mockResolvedValueOnce(null);
+    const result = await getBase('otherslug');
+    expect(result).toEqual([]);
+    // Only one get call (for the slug key), not two (no legacy read)
+    expect(mockRedis.get).toHaveBeenCalledTimes(1);
+    expect(mockRedis.set).not.toHaveBeenCalled();
+  });
+
+  it('migration: when slug-keyed data exists, returns it without reading legacy', async () => {
+    const existing = [
+      { id: 'a', brainrot_id: 1, mutation_id: null, level: 5, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z' },
+    ];
+    mockRedis.get.mockResolvedValueOnce(existing);
+    const result = await getBase(SIMON_SLUG);
+    expect(result).toEqual(existing);
+    expect(mockRedis.get).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -48,7 +100,7 @@ describe('addBrainrot', () => {
     mockRedis.get.mockResolvedValueOnce([]);
     mockRedis.set.mockResolvedValueOnce('OK');
 
-    const result = await addBrainrot({ brainrot_id: 1, mutation_id: null, level: 5 });
+    const result = await addBrainrot(TEST_SLUG, { brainrot_id: 1, mutation_id: null, level: 5 });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -56,11 +108,11 @@ describe('addBrainrot', () => {
     expect(result.entry.created_at).toBeTruthy();
     expect(result.entry.updated_at).toBeTruthy();
     expect(result.evictedId).toBeUndefined();
-    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:base', [result.entry]);
+    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:test:base', [result.entry]);
   });
 
   it('throws when input is invalid', async () => {
-    await expect(addBrainrot({ brainrot_id: 1, mutation_id: null, level: 999 } as any))
+    await expect(addBrainrot(TEST_SLUG, { brainrot_id: 1, mutation_id: null, level: 999 } as any))
       .rejects.toThrow();
   });
 
@@ -76,7 +128,7 @@ describe('addBrainrot', () => {
     }));
     mockRedis.get.mockResolvedValueOnce(fullBase);
 
-    const result = await addBrainrot({ brainrot_id: 1, mutation_id: null, level: 1 });
+    const result = await addBrainrot(TEST_SLUG, { brainrot_id: 1, mutation_id: null, level: 1 });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -110,7 +162,7 @@ describe('addBrainrot', () => {
     mockRedis.get.mockResolvedValueOnce(fullBase);
     mockRedis.set.mockResolvedValueOnce('OK');
 
-    const result = await addBrainrot({
+    const result = await addBrainrot(TEST_SLUG, {
       brainrot_id: 14, // strong
       mutation_id: 10,
       level: 75,
@@ -135,14 +187,14 @@ describe('updateBrainrot', () => {
     mockRedis.get.mockResolvedValueOnce(existing);
     mockRedis.set.mockResolvedValueOnce('OK');
 
-    const updated = await updateBrainrot('a', { level: 10 });
+    const updated = await updateBrainrot(TEST_SLUG, 'a', { level: 10 });
     expect(updated?.level).toBe(10);
     expect(updated?.updated_at).not.toBe('old');
   });
 
   it('returns null when entry not found', async () => {
     mockRedis.get.mockResolvedValueOnce([]);
-    expect(await updateBrainrot('nope', { level: 10 })).toBeNull();
+    expect(await updateBrainrot(TEST_SLUG, 'nope', { level: 10 })).toBeNull();
   });
 });
 
@@ -155,17 +207,17 @@ describe('deleteBrainrot', () => {
     mockRedis.get.mockResolvedValueOnce(existing);
     mockRedis.set.mockResolvedValueOnce('OK');
 
-    const ok = await deleteBrainrot('a');
+    const ok = await deleteBrainrot(TEST_SLUG, 'a');
     expect(ok).toBe(true);
     expect(mockRedis.set).toHaveBeenCalledWith(
-      'kicktrack:base',
+      'kicktrack:test:base',
       [existing[1]],
     );
   });
 
   it('returns false when id not found', async () => {
     mockRedis.get.mockResolvedValueOnce([]);
-    expect(await deleteBrainrot('nope')).toBe(false);
+    expect(await deleteBrainrot(TEST_SLUG, 'nope')).toBe(false);
   });
 });
 
@@ -182,18 +234,18 @@ describe('replaceBase', () => {
       },
     ];
     mockRedis.set.mockResolvedValueOnce('OK');
-    await replaceBase(incoming as any);
-    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:base', incoming);
+    await replaceBase(TEST_SLUG, incoming as any);
+    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:test:base', incoming);
   });
 
   it('rejects invalid arrays', async () => {
-    await expect(replaceBase([{ bogus: true }] as any)).rejects.toThrow();
+    await expect(replaceBase(TEST_SLUG, [{ bogus: true }] as any)).rejects.toThrow();
   });
 
   it('rejects arrays with non-UUID ids', async () => {
     const incoming = [
       { id: 'not-a-uuid', brainrot_id: 1, mutation_id: null, level: 5, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z' },
     ];
-    await expect(replaceBase(incoming as any)).rejects.toThrow();
+    await expect(replaceBase(TEST_SLUG, incoming as any)).rejects.toThrow();
   });
 });

@@ -5,12 +5,13 @@ import { getBase, replaceBase } from '@/server/services/base';
 import { userBrainrotArraySchema } from '@/shared/schemas/user-brainrot';
 import type { UserBrainrot } from '@/shared/types';
 
-export async function exportBaseAction(): Promise<string> {
-  const base = await getBase();
+export async function exportBaseAction(slug: string): Promise<string> {
+  const base = await getBase(slug);
   return JSON.stringify(base, null, 2);
 }
 
 export async function importBaseAction(
+  slug: string,
   formData: FormData,
 ): Promise<{ ok: true; previousBase: UserBrainrot[] } | { ok: false; error: string }> {
   const file = formData.get('file');
@@ -30,8 +31,8 @@ export async function importBaseAction(
     return { ok: false, error: 'JSON does not match expected shape' };
   }
 
-  const previousBase = await getBase();
-  await replaceBase(result.data);
-  revalidatePath('/');
+  const previousBase = await getBase(slug);
+  await replaceBase(slug, result.data);
+  revalidatePath('/u/' + slug);
   return { ok: true, previousBase };
 }

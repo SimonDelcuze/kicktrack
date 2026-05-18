@@ -17,13 +17,14 @@ import type { Brainrot, Mutation, TradeLogEvent, UserBrainrot } from '@/shared/t
 const FLUSH_INTERVAL_MS = 10_000;
 
 type Props = {
+  slug: string;
   trade: UserBrainrot[];
   tradeLog: TradeLogEvent[];
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
 };
 
-export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
+export function TradeSection({ slug, trade, tradeLog, brainrots, mutations }: Props) {
   const [addOpen, setAddOpen] = useState(false);
   // The queue is the source of truth for pending ops. We keep both a ref (read
   // synchronously inside rapid event handlers without stale-closure issues)
@@ -104,7 +105,7 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
     setPast([]);
     setFuture([]);
     try {
-      await applyTradeBatchAction(batch);
+      await applyTradeBatchAction(slug, batch);
     } catch (e) {
       // Restore the batch in front of any new ops queued during the flight.
       commitQueue([...batch, ...queueRef.current]);
@@ -113,7 +114,7 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
     } finally {
       flushingRef.current = false;
     }
-  }, []);
+  }, [slug]);
 
   // Auto-flush every FLUSH_INTERVAL_MS.
   useEffect(() => {
@@ -231,6 +232,7 @@ export function TradeSection({ trade, tradeLog, brainrots, mutations }: Props) {
               onEnqueueRemove={enqueueRemove}
             />
             <AddBrainrotDialog
+              slug={slug}
               section="trade"
               brainrots={brainrots}
               mutations={mutations}

@@ -7,16 +7,17 @@ import { importBaseAction, exportBaseAction } from '@/app/settings/actions';
 import type { UserBrainrot } from '@/shared/types';
 
 type Props = {
+  slug: string;
   onMutated?: (previousBase: UserBrainrot[]) => void;
 };
 
-export function ImportForm({ onMutated }: Props = {}) {
+export function ImportForm({ slug, onMutated }: Props) {
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   function handleExport() {
     start(async () => {
-      const json = await exportBaseAction();
+      const json = await exportBaseAction(slug);
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -29,7 +30,7 @@ export function ImportForm({ onMutated }: Props = {}) {
 
   function handleImport(formData: FormData) {
     start(async () => {
-      const res = await importBaseAction(formData);
+      const res = await importBaseAction(slug, formData);
       if (res.ok) {
         onMutated?.(res.previousBase);
         setMessage({ kind: 'ok', text: 'Base imported successfully.' });

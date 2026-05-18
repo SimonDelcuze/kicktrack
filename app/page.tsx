@@ -1,26 +1,30 @@
-import { getBase } from '@/server/services/base';
-import { getTrade } from '@/server/services/trade';
-import { getTradeLog } from '@/server/services/trade-log';
-import { brainrots } from '@/shared/data/brainrots';
-import { mutations } from '@/shared/data/mutations';
-import { DashboardClient } from '@/components/DashboardClient';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { randomSlug } from '@/shared/utils/slug';
 
-export default async function DashboardPage() {
-  const [base, trade, tradeLog] = await Promise.all([
-    getBase(),
-    getTrade(),
-    getTradeLog(),
-  ]);
+export default function LandingPage() {
+  const router = useRouter();
+
+  function handleCreate() {
+    const slug = randomSlug();
+    router.push(`/u/${slug}`);
+  }
 
   return (
-    <DashboardClient
-      base={base}
-      trade={trade}
-      tradeLog={tradeLog}
-      brainrots={brainrots}
-      mutations={mutations}
-    />
+    <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight">KickTrack</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Personal tracker for Kick a Lucky Block bases.
+        </p>
+        <div className="mt-8">
+          <Button className="w-full" onClick={handleCreate}>
+            Create new profile
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

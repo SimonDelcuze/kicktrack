@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { SettingsDialog } from '@/components/dialogs/SettingsDialog';
-import { useHistory } from '@/components/HistoryProvider';
+import { useOptionalHistory } from '@/components/HistoryProvider';
+import { useSlug } from '@/components/hooks/use-slug';
 import { cn } from '@/lib/utils';
 
 export function Nav() {
-  const { canUndo, canRedo, undo, redo } = useHistory();
+  const history = useOptionalHistory();
+  const slug = useSlug();
+  const hasSlug = slug !== null;
 
   return (
     <nav className="sticky top-0 z-30 border-b border-border bg-background">
@@ -18,39 +21,41 @@ export function Nav() {
           KickTrack
         </Link>
 
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={undo}
-            disabled={!canUndo}
-            aria-label="Undo (Ctrl+Z)"
-            title="Undo (Ctrl+Z)"
-            className={cn(
-              'inline-flex size-9 items-center justify-center rounded-md border border-border bg-card transition-colors',
-              canUndo
-                ? 'text-foreground hover:bg-accent'
-                : 'cursor-not-allowed text-muted-foreground/40',
-            )}
-          >
-            <UndoIcon />
-          </button>
-          <button
-            type="button"
-            onClick={redo}
-            disabled={!canRedo}
-            aria-label="Redo (Ctrl+Y)"
-            title="Redo (Ctrl+Y)"
-            className={cn(
-              'inline-flex size-9 items-center justify-center rounded-md border border-border bg-card transition-colors',
-              canRedo
-                ? 'text-foreground hover:bg-accent'
-                : 'cursor-not-allowed text-muted-foreground/40',
-            )}
-          >
-            <RedoIcon />
-          </button>
-          <SettingsDialog />
-        </div>
+        {hasSlug && history && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={history.undo}
+              disabled={!history.canUndo}
+              aria-label="Undo (Ctrl+Z)"
+              title="Undo (Ctrl+Z)"
+              className={cn(
+                'inline-flex size-9 items-center justify-center rounded-md border border-border bg-card transition-colors',
+                history.canUndo
+                  ? 'text-foreground hover:bg-accent'
+                  : 'cursor-not-allowed text-muted-foreground/40',
+              )}
+            >
+              <UndoIcon />
+            </button>
+            <button
+              type="button"
+              onClick={history.redo}
+              disabled={!history.canRedo}
+              aria-label="Redo (Ctrl+Y)"
+              title="Redo (Ctrl+Y)"
+              className={cn(
+                'inline-flex size-9 items-center justify-center rounded-md border border-border bg-card transition-colors',
+                history.canRedo
+                  ? 'text-foreground hover:bg-accent'
+                  : 'cursor-not-allowed text-muted-foreground/40',
+              )}
+            >
+              <RedoIcon />
+            </button>
+            <SettingsDialog slug={slug} />
+          </div>
+        )}
       </div>
     </nav>
   );

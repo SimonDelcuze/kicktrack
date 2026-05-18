@@ -14,6 +14,7 @@ import type { Brainrot, Mutation, TradeLogEvent, UserBrainrot } from '@/shared/t
 type Section = 'base' | 'trade';
 
 type Props = {
+  slug: string;
   section: Section;
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function AddBrainrotDialog({
+  slug,
   section,
   brainrots,
   mutations,
@@ -51,6 +53,7 @@ export function AddBrainrotDialog({
           Pick a brainrot and an optional mutation. Use the ± footer to add or remove.
         </DialogDescription>
         <AddBrainrotForm
+          slug={slug}
           section={section}
           brainrots={brainrots}
           mutations={mutations}

@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockRedis } = vi.hoisted(() => ({
-  mockRedis: { get: vi.fn(), set: vi.fn() },
+  mockRedis: { get: vi.fn(), set: vi.fn(), del: vi.fn() },
 }));
 vi.mock('server-only', () => ({}));
 vi.mock('@/server/lib/kv', () => ({
   redis: mockRedis,
-  BASE_KEY: 'kicktrack:base',
+  SIMON_SLUG: 'simontest',
+  baseKey: (slug: string) => `kicktrack:${slug}:base`,
+  tradeKey: (slug: string) => `kicktrack:${slug}:trade`,
+  tradeLogKey: (slug: string) => `kicktrack:${slug}:trade:log`,
+  LEGACY_BASE_KEY: 'kicktrack:base',
+  LEGACY_TRADE_KEY: 'kicktrack:trade',
+  LEGACY_TRADE_LOG_KEY: 'kicktrack:trade:log',
 }));
 
 import { removeOneByComboFromBase } from '@/server/services/base';
+
+const TEST_SLUG = 'test';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -29,15 +37,15 @@ describe('removeOneByComboFromBase', () => {
     mockRedis.get.mockResolvedValueOnce([older, newer]);
     mockRedis.set.mockResolvedValueOnce('OK');
 
-    const result = await removeOneByComboFromBase(1, 7, 1);
+    const result = await removeOneByComboFromBase(TEST_SLUG, 1, 7, 1);
 
     expect(result?.removedId).toBe(newer.id);
-    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:base', [older]);
+    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:test:base', [older]);
   });
 
   it('returns null when nothing matches', async () => {
     mockRedis.get.mockResolvedValueOnce([]);
-    expect(await removeOneByComboFromBase(1, null, 1)).toBeNull();
+    expect(await removeOneByComboFromBase(TEST_SLUG, 1, null, 1)).toBeNull();
     expect(mockRedis.set).not.toHaveBeenCalled();
   });
 
@@ -52,7 +60,7 @@ describe('removeOneByComboFromBase', () => {
     };
     mockRedis.get.mockResolvedValueOnce([entry]);
     mockRedis.set.mockResolvedValueOnce('OK');
-    expect((await removeOneByComboFromBase(3, null, 1))?.removedId).toBe(entry.id);
+    expect((await removeOneByComboFromBase(TEST_SLUG, 3, null, 1))?.removedId).toBe(entry.id);
   });
 
   it('respects the level filter', async () => {
@@ -67,8 +75,8 @@ describe('removeOneByComboFromBase', () => {
     const lvl5 = { ...lvl1, id: '55555555-5555-5555-5555-555555555555', level: 5 };
     mockRedis.get.mockResolvedValueOnce([lvl1, lvl5]);
     mockRedis.set.mockResolvedValueOnce('OK');
-    const result = await removeOneByComboFromBase(1, null, 5);
+    const result = await removeOneByComboFromBase(TEST_SLUG, 1, null, 5);
     expect(result?.removedId).toBe(lvl5.id);
-    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:base', [lvl1]);
+    expect(mockRedis.set).toHaveBeenCalledWith('kicktrack:test:base', [lvl1]);
   });
 });

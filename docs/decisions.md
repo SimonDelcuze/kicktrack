@@ -35,3 +35,15 @@
 - Le chat log reste basé sur le state serveur (les events apparaissent au flush suivant — acceptable).
 - Undo Trade clear la queue avant de snapper l'état serveur au snapshot.
 - Base reste instant (l'éviction côté serveur complique le batch, et le cap 30 fait que les clics sont rares).
+
+## 2026-05-18 — Simon (multi-profile via /u/[slug])
+- Architecture multi-profil : chaque profil a son propre namespace KV (`kicktrack:${slug}:base/trade/log`).
+- URL : `/u/[slug]` par profil. Slug = 10 caractères `[a-z0-9]` aléatoires. La racine `/` est une landing minimale avec bouton "Create new profile" qui génère un slug et redirige.
+- Pas d'auth — le slug est l'identifiant secret (URL obscure).
+- `SIMON_SLUG = 'swym0wnrz5'` hardcodé dans `server/lib/kv.ts`.
+- Migration one-shot : au premier `getBase/getTrade/getTradeLog` avec `SIMON_SLUG`, si la clé préfixée est vide mais la clé legacy (`kicktrack:base` etc.) existe, les données sont copiées vers la clé préfixée et la clé legacy est supprimée. Transparent au premier accès post-deploy.
+- `HistoryProvider` déplacé de `app/layout.tsx` vers `app/u/[slug]/page.tsx` (reçoit le slug en prop).
+- Nav utilise `useOptionalHistory()` + `useSlug()` : les boutons undo/redo et settings sont masqués sur `/` (pas de slug).
+- Tous les server actions prennent `slug: string` en premier argument. Tous les composants clients reçoivent et transmettent le slug.
+- Tests mis à jour : mock de `@/server/lib/kv` exporte les key-builders (`baseKey`, `tradeKey`, `tradeLogKey`) et les constantes legacy. Nouveaux tests de migration dans chaque suite de service.
+- Build + test + lint = OK.

@@ -20,6 +20,7 @@ import { needsLightText } from '@/shared/utils/contrast';
 type Section = 'base' | 'trade';
 
 type Props = {
+  slug: string;
   section: Section;
   brainrots: readonly Brainrot[];
   mutations: readonly Mutation[];
@@ -34,6 +35,7 @@ type Props = {
 };
 
 export function AddBrainrotForm({
+  slug,
   section,
   brainrots,
   mutations,
@@ -120,7 +122,7 @@ export function AddBrainrotForm({
             formData.set('brainrot_id', String(brainrotId));
             formData.set('mutation_id', mutationId === null ? 'null' : String(mutationId));
             formData.set('level', '1');
-            const result = await createBrainrotAction(formData);
+            const result = await createBrainrotAction(slug, formData);
             if (result.ok) {
               onMutatedBase?.(result.previousBase);
               onAddedToBase?.(result.entry.id);
@@ -132,7 +134,7 @@ export function AddBrainrotForm({
               break;
             }
           } else {
-            const result = await addToTradeAction(brainrotId, mutationId);
+            const result = await addToTradeAction(slug, brainrotId, mutationId);
             if (result.ok) {
               onMutatedTrade?.(result.previousTrade, result.previousLog);
               applied++;
@@ -142,13 +144,13 @@ export function AddBrainrotForm({
       } else {
         for (let i = 0; i < -delta; i++) {
           if (section === 'base') {
-            const result = await removeOneByComboFromBaseAction(brainrotId, mutationId, 1);
+            const result = await removeOneByComboFromBaseAction(slug, brainrotId, mutationId, 1);
             if (result.ok) {
               onMutatedBase?.(result.previousBase);
               applied++;
             } else break;
           } else {
-            const result = await removeOneFromTradeAction(brainrotId, mutationId);
+            const result = await removeOneFromTradeAction(slug, brainrotId, mutationId);
             if (result.ok) {
               onMutatedTrade?.(result.previousTrade, result.previousLog);
               applied++;
