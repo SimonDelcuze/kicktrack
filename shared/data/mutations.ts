@@ -19,6 +19,7 @@ export const mutations: readonly Mutation[] = [
   { id: 13, name: 'bacon',        multiplier: 30,  color_hex: '#f59e0b', tier_order: 14 }, // orange ambré
   { id: 15, name: 'astral',       multiplier: 35,  color_hex: '#7c3aed', tier_order: 15 }, // violet
   { id: 16, name: 'phantom',      multiplier: 35,  color_hex: '#bbf7d0', tier_order: 16 }, // vert très clair
+  { id: 17, name: 'volcanic',     multiplier: 35,  color_hex: '#78350f', tier_order: 17 }, // marron
 ] as const;
 
 export const mutationById = (id: number) => mutations.find((m) => m.id === id);
